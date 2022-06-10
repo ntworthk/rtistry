@@ -37,3 +37,29 @@ function(){
   
   print(g)
 }
+
+#* Plot a histogram
+#* @serializer png
+#* @get /png
+function(){
+  col <- runif(3)
+  
+  colour <- rgb(col[1], col[2], col[3])
+  
+  t <- seq.int(0, 6280, 10)/1000
+  
+  a <- 3
+  x <- 2 * a * (1 - cos(t)) * cos(t)
+  y <- 2 * a * (1 - cos(t)) * sin(t)
+  tbl <- data.frame(x, y)
+  
+  g <- ggplot(tbl, aes(x, y)) +
+    geom_polygon(fill = colour) +
+    theme_void() +
+    theme(panel.background = element_blank(), plot.background = element_blank()) +
+    theme(
+      
+    )
+  
+  print(g)
+}
