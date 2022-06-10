@@ -39,6 +39,23 @@ function(){
 }
 
 #* Plot a histogram
+#* @serializer contentType list(type="image/svg+xml")
+#* @get /cardioid
+function(){
+  
+  img <- paste0(readLines(con = "cardioid.svg"), collapse = "")
+  col <- round(runif(3)*100000)/1000
+  img <- gsub("COLRED", col[1], img)
+  img <- gsub("COLGRN", col[2], img)
+  img <- gsub("COLBLU", col[3], img)
+  
+  img
+  
+}
+
+
+
+#* Plot a histogram
 #* @serializer png
 #* @get /png
 function(){
