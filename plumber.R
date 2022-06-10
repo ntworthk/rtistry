@@ -53,6 +53,21 @@ function(){
   
 }
 
+#* Plot a histogram
+#* @serializer contentType list(type="image/svg+xml")
+#* @get /cardioid_outline
+function(){
+  
+  img <- paste0(readLines(con = "cardioid.svg"), collapse = "")
+  col <- round(runif(3)*100000)/1000
+  stroke <- paste0("stroke:rgb(", col[1], "%,", col[2], "%,", col[3], "%);stroke-width:2;")
+  img <- gsub("stroke:none;", stroke, img)
+  img <- gsub("fill:rgb\\(COLRED%,COLGRN%,COLBLU%\\)", "fill:none", img)
+  
+  img
+  
+}
+
 
 
 #* Plot a histogram
