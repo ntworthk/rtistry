@@ -103,13 +103,13 @@ function(){
 #* @get /wisdom
 function(){
   
-  wisdom <- read_file("https://github.com/merlinmann/wisdom/raw/master/wisdom.md") |> 
-    str_extract("The Management(.|\n)*") |> 
-    str_split("\n") |> 
-    unlist() |> 
-    str_subset("^- ") |> 
-    str_subset("elated:", negate = TRUE) |> 
-    str_remove("- ")
+  wisdom <- read_file("https://github.com/merlinmann/wisdom/raw/master/wisdom.md")
+  wisdom <- str_extract(wisdom, "The Management(.|\n)*")
+  wisdom <- str_split(wisdom, "\n")
+  wisdom <- unlist(wisdom)
+  wisdom <- str_subset(wisdom, "^- ")
+  wisdom <- str_subset(wisdom, "elated:", negate = TRUE)
+  wisdom <- str_remove(wisdom, "- ")
   
   sample(wisdom, 1)
   
