@@ -113,12 +113,17 @@ function(){
   wisdom <- sample(wisdom, 1)
   wisdom_short <- ifelse(nchar(wisdom) > 153, paste0(str_extract(wisdom, ".{150}"), "..."), wisdom)
   
+  url_find_text <- str_extract(wisdom_short, ".{30}")
+  url_find_text <- unlist(strsplit(url_find_text, " "))
+  url_find_text <- url_find_text[1:(length(url_find_text) - 1)]
+  url_find_text <- paste(url_find_text, collapse = " ")
+  url <- paste0("https://github.com/merlinmann/wisdom/blob/master/wisdom.md#:~:text=", url_find_text)
   
   list(
     wisdom = wisdom,
     wisdom_short = wisdom_short,
     author = "Merlin Mann",
-    url = "https://github.com/merlinmann/wisdom"
-    )
+    url = url
+  )
   
 }
