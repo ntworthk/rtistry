@@ -111,6 +111,6 @@ function(){
   wisdom <- str_subset(wisdom, "elated:", negate = TRUE)
   wisdom <- str_remove(wisdom, "- ")
   
-  sample(wisdom, 1)
+  list(wisdom = sample(wisdom, 1))
   
 }
