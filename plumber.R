@@ -103,6 +103,8 @@ function(){
 #* @get /wisdom
 function(max_length = 143){
   
+  max_length <- as.integer(max_length)
+
   wisdom <- read_file("https://github.com/merlinmann/wisdom/raw/master/wisdom.md")
   wisdom <- str_extract(wisdom, "The Management(.|\n)*")
   wisdom <- str_split(wisdom, "\n")
