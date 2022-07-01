@@ -101,7 +101,7 @@ function(){
 #* Get some wisdom
 #* @serializer json
 #* @get /wisdom
-function(){
+function(max_length = 143){
   
   wisdom <- read_file("https://github.com/merlinmann/wisdom/raw/master/wisdom.md")
   wisdom <- str_extract(wisdom, "The Management(.|\n)*")
@@ -111,7 +111,7 @@ function(){
   wisdom <- str_subset(wisdom, "elated:", negate = TRUE)
   wisdom <- str_remove(wisdom, "- ")
   wisdom <- sample(wisdom, 1)
-  wisdom_short <- ifelse(nchar(wisdom) > 153, paste0(str_extract(wisdom, ".{150}"), "..."), wisdom)
+  wisdom_short <- ifelse(nchar(wisdom) > max_length + 3, paste0(str_extract(wisdom, paste0(".{", max_length, "}")), "..."), wisdom)
   
   url_find_text <- str_extract(wisdom_short, ".{30}")
   url_find_text <- unlist(strsplit(url_find_text, " "))
