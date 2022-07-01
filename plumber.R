@@ -113,7 +113,7 @@ function(max_length = 143){
   wisdom <- sample(wisdom, 1)
   wisdom_short <- ifelse(nchar(wisdom) > max_length + 3, paste0(str_extract(wisdom, paste0(".{", max_length, "}")), "..."), wisdom)
   
-  url_find_text <- str_extract(wisdom_short, ".{30}")
+  url_find_text <- str_extract(wisdom_short, paste0(".{", min(nchar(wisdom_short), 30), "}"))
   url_find_text <- unlist(strsplit(url_find_text, " "))
   url_find_text <- url_find_text[1:(length(url_find_text) - 1)]
   url_find_text <- paste(url_find_text, collapse = " ")
