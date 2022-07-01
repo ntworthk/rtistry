@@ -111,6 +111,10 @@ function(){
   wisdom <- str_subset(wisdom, "elated:", negate = TRUE)
   wisdom <- str_remove(wisdom, "- ")
   
-  list(wisdom = sample(wisdom, 1))
+  list(
+    wisdom = sample(wisdom, 1),
+    author = "Merlin Mann",
+    url = "https://github.com/merlinmann/wisdom"
+    )
   
 }
