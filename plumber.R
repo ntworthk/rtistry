@@ -110,9 +110,13 @@ function(){
   wisdom <- str_subset(wisdom, "^- ")
   wisdom <- str_subset(wisdom, "elated:", negate = TRUE)
   wisdom <- str_remove(wisdom, "- ")
+  wisdom <- sample(wisdom, 1)
+  wisdom_short <- ifelse(nchar(wisdom) > 153, paste0(str_extract(wisdom, ".{150}"), "..."), wisdom)
+  
   
   list(
-    wisdom = sample(wisdom, 1),
+    wisdom = wisdom,
+    wisdom_short = wisdom_short,
     author = "Merlin Mann",
     url = "https://github.com/merlinmann/wisdom"
     )
