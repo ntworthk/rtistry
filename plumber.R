@@ -12,6 +12,8 @@
 
 library(plumber)
 library(ggplot2)
+library(readr)
+library(stringr)
 
 #* @apiTitle Plumber Example API
 
@@ -94,4 +96,21 @@ function(){
     )
   
   print(g)
+}
+
+#* Get some wisdom
+#* @serializer json
+#* @get /wisdom
+function(){
+  
+  wisdom <- read_file("https://github.com/merlinmann/wisdom/raw/master/wisdom.md") |> 
+    str_extract("The Management(.|\n)*") |> 
+    str_split("\n") |> 
+    unlist() |> 
+    str_subset("^- ") |> 
+    str_subset("elated:", negate = TRUE) |> 
+    str_remove("- ")
+  
+  sample(wisdom, 1)
+  
 }
