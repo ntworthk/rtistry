@@ -57,11 +57,27 @@ function(){
 
 #* Plot a histogram
 #* @serializer contentType list(type="image/svg+xml")
+#* @param width Width of the outline. Default 2.
+#* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /cardioid_outline
-function(width = 2){
+function(width = 2, colour = NULL){
   
   img <- paste0(readLines(con = "cardioid.svg"), collapse = "")
-  col <- round(runif(3)*100000)/1000
+  
+  if (is.null(colour) || !str_detect(colour, "^#*[A-Fa-f0-9]{6}$")) {
+    
+    col <- round(runif(3)*100000)/1000
+    
+  } else {
+    
+    if (!str_detect(colour, "#")) {
+      colour <- paste0("#", colour)
+    }
+    
+    col <- as.vector(col2rgb(colour)) / 2.55
+    
+  }
+  
   stroke <- paste0("stroke:rgb(", col[1], "%,", col[2], "%,", col[3], "%);stroke-width:",width,";")
   img <- gsub("stroke:none;", stroke, img)
   img <- gsub("fill:rgb\\(COLRED%,COLGRN%,COLBLU%\\)", "fill:none", img)
@@ -74,11 +90,25 @@ function(width = 2){
 
 #* Plot a histogram
 #* @serializer png
+#* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /png
-function(){
-  col <- runif(3)
+function(colour = NULL){
   
-  colour <- rgb(col[1], col[2], col[3])
+  
+  if (is.null(colour) || !str_detect(colour, "^#*[A-Fa-f0-9]{6}$")) {
+    
+    col <- runif(3)
+    colour <- rgb(col[1], col[2], col[3])
+    
+  } else {
+    
+    if (!str_detect(colour, "#")) {
+      colour <- paste0("#", colour)
+    }
+    
+    colour <- as.vector(col2rgb(colour)) / 255
+    
+  }
   
   t <- seq.int(0, 6280, 10)/1000
   
@@ -100,11 +130,12 @@ function(){
 
 #* Get some wisdom
 #* @serializer json
+#* @param max_length Maximum length of the quote to return.
 #* @get /wisdom
 function(max_length = 143){
   
   max_length <- as.integer(max_length)
-
+  
   wisdom <- read_file("https://github.com/merlinmann/wisdom/raw/master/wisdom.md")
   wisdom <- str_extract(wisdom, "The Management(.|\n)*")
   wisdom <- str_split(wisdom, "\n")
