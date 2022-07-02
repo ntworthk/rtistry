@@ -64,7 +64,7 @@ function(width = 2, colour = NULL){
   
   img <- paste0(readLines(con = "cardioid.svg"), collapse = "")
   
-  if (is.null(colour) || !str_detect(colour, "^#*[A-Fa-f0-9]{6}$")) {
+  if (is.null(colour) || !str_detect(colour, "^#*[A-Fa-f0-9]{6,8}$")) {
     
     col <- round(runif(3)*100000)/1000
     
@@ -72,6 +72,10 @@ function(width = 2, colour = NULL){
     
     if (!str_detect(colour, "#")) {
       colour <- paste0("#", colour)
+    }
+    
+    if (str_detect(colour, "^#*[A-Fa-f0-9]{8}$")) {
+      colour <- paste0("#", str_sub(colour, 4, 9))
     }
     
     col <- as.vector(col2rgb(colour)) / 2.55
