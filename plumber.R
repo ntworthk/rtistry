@@ -154,6 +154,7 @@ function(max_length = 143){
   url_find_text <- unlist(strsplit(url_find_text, " "))
   url_find_text <- url_find_text[1:(length(url_find_text) - 1)]
   url_find_text <- paste(url_find_text, collapse = " ")
+  url_find_text <- URLencode(url_find_text, reserved = TRUE)
   url <- paste0("https://github.com/merlinmann/wisdom/blob/master/wisdom.md#:~:text=", url_find_text)
   
   list(
