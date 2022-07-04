@@ -14,7 +14,6 @@ library(plumber)
 library(ggplot2)
 library(readr)
 library(stringr)
-library(markdown)
 
 #* @apiTitle Plumber Example API
 
@@ -150,7 +149,12 @@ function(max_length = 143){
   wisdom <- str_remove(wisdom, "- ")
   wisdom <- sample(wisdom, 1)
   wisdom_short <- ifelse(nchar(wisdom) > max_length + 3, paste0(str_extract(wisdom, paste0(".{", max_length, "}")), "..."), wisdom)
-  wisdom_short_html <- markdownToHTML(text = wisdom_short, fragment.only = TRUE)
+  
+  wisdom_short_html <- str_replace_all(wisdom, "\\*\\*", "~")
+  wisdom_short_html <- str_replace_all(wisdom_short_html, "\\*", "⍨")
+  
+  wisdom_short_html <- str_replace_all(wisdom_short_html, "~([[:alnum:]|[[:punct:]]|[:space:]]*)~", "[b]\\1[/b]")
+  wisdom_short_html <- str_replace_all(wisdom_short_html, "⍨([[:alnum:]|[[:punct:]]|[:space:]]*)⍨", "[i]\\1[/i]")
   
   url_find_text <- str_extract(wisdom_short, paste0(".{", min(nchar(wisdom_short), 30), "}"))
   url_find_text <- unlist(strsplit(url_find_text, " "))
