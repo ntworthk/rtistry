@@ -150,7 +150,7 @@ function(max_length = 143){
   wisdom <- sample(wisdom, 1)
   wisdom_short <- ifelse(nchar(wisdom) > max_length + 3, paste0(str_extract(wisdom, paste0(".{", max_length, "}")), "..."), wisdom)
   
-  wisdom_short_html <- str_replace_all(wisdom, "\\*\\*", "~")
+  wisdom_short_html <- str_replace_all(wisdom_short, "\\*\\*", "~")
   wisdom_short_html <- str_replace_all(wisdom_short_html, "\\*", "⍨")
   
   wisdom_short_html <- str_replace_all(wisdom_short_html, "~([[:alnum:]|[[:punct:]]|[:space:]]*)~", "[b]\\1[/b]")
