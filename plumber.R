@@ -202,7 +202,7 @@ function(since = 2000){
     geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 100, size = 5, show.legend = FALSE) +
     scale_x_date(name = NULL) +
     scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
-    scale_colour_manual(name = NULL, values = hktools::houstonkemp_colours) +
+    scale_colour_manual(name = NULL, values = c("#008698", "#232C31")) +
     scale_size_manual(values = c("Quarterly" = 0.7, "Annual" = 1), guide = guide_none()) +
     theme_classic(base_size = 16, base_family = "Lato") +
     theme(
