@@ -199,7 +199,7 @@ function(since = 2000){
   
   g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
     geom_xspline() +
-    geom_text(data = \(x) filter(x, date == max(date), type == "Quarterly"), aes(label = inflation_label), hjust = 0, nudge_x = 100, size = 5, show.legend = FALSE) +
+    geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 100, size = 5, show.legend = FALSE) +
     scale_x_date(name = NULL) +
     scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
     scale_colour_manual(name = NULL, values = hktools::houstonkemp_colours) +
