@@ -14,6 +14,10 @@ library(plumber)
 library(ggplot2)
 library(readr)
 library(stringr)
+library(readabs)
+library(dplyr)
+library(scales)
+library(ggalt)
 
 #* @apiTitle Plumber Example API
 
@@ -171,4 +175,42 @@ function(max_length = 143){
     url = url
   )
   
+}
+
+#* Plot Australia's CPI
+#* @serializer svg
+#* @param since Plot CPI starting from this year.
+#* @get /cpi
+function(since = 2000){
+  
+  cpi <- read_cpi()
+  
+  cpi$inflation <- cpi$cpi / lag(cpi$cpi, 4) - 1
+  cpi$month <- abs(parse_number(str_extract(as.character(cpi$date), "-[0-9]{2}-")))
+  cpi <- cpi[!is.na(cpi$inflation), ]
+  cpi$type <- "Quarterly"
+  annual <- cpi[cpi$month == 6, ]
+  annual$type <- "Annual"
+  cpi <- rbind(cpi, annual)
+  cpi$type <- factor(cpi$type, c("Quarterly", "Annual"), ordered = TRUE)
+  cpi$inflation_label <- percent(cpi$inflation, accuracy = 0.1)
+  
+  cpi <- cpi[parse_number(as.character(cpi$date)) >= as.numeric(since), ]
+  
+  g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
+    geom_xspline() +
+    geom_text(data = \(x) filter(x, date == max(date), type == "Quarterly"), aes(label = inflation_label), hjust = 0, nudge_x = 100, size = 5, show.legend = FALSE) +
+    scale_x_date(name = NULL) +
+    scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
+    scale_colour_manual(name = NULL, values = hktools::houstonkemp_colours) +
+    scale_size_manual(values = c("Quarterly" = 0.7, "Annual" = 1), guide = guide_none()) +
+    theme_classic(base_size = 16, base_family = "Lato") +
+    theme(
+      panel.grid.major.y = element_line(),
+      plot.background = element_rect("lightyellow"),
+      panel.background = element_blank(),
+      legend.position = "bottom", legend.background = element_blank()
+    )
+  
+  print(g)
 }
