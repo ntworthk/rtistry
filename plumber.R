@@ -245,6 +245,7 @@ function(since = 2000){
     scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
     scale_colour_manual(name = NULL, values = c("#008698", "#232C31")) +
     scale_size_manual(values = c("Quarterly" = 0.7, "Annual" = 1), guide = guide_none()) +
+    coord_cartesian(clip = "off") +
     theme_classic(base_size = 16, base_family = "Lato") +
     theme(
       panel.grid.major.y = element_line(),
