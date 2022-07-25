@@ -178,9 +178,9 @@ function(max_length = 143){
 }
 
 #* Plot Australia's CPI
-#* @serializer svg
+#* @serializer svg list(width = 17.28, height = 9.72)
 #* @param since Plot CPI starting from this year.
-#* @get /cpi
+#* @get /cpi/svg
 function(since = 2000){
   
   cpi <- read_cpi()
@@ -211,6 +211,53 @@ function(since = 2000){
       panel.background = element_blank(),
       legend.position = "bottom", legend.background = element_blank()
     )
+  
+  print(g)
+}
+
+#* Plot Australia's CPI
+#* @serializer png list(width = 1920, height = 1080, res = 200)
+#* @param since Plot CPI starting from this year.
+#* @get /cpi
+function(since = 2000){
+  
+  cpi <- read_cpi()
+  
+  cpi$inflation <- cpi$cpi / lag(cpi$cpi, 4) - 1
+  cpi$month <- abs(parse_number(str_extract(as.character(cpi$date), "-[0-9]{2}-")))
+  cpi <- cpi[!is.na(cpi$inflation), ]
+  cpi$type <- "Quarterly"
+  annual <- cpi[cpi$month == 6, ]
+  annual$type <- "Annual"
+  cpi <- rbind(cpi, annual)
+  cpi$type <- factor(cpi$type, c("Quarterly", "Annual"), ordered = TRUE)
+  cpi$inflation_label <- percent(cpi$inflation, accuracy = 0.1)
+  
+  cpi <- cpi[parse_number(as.character(cpi$date)) >= as.numeric(since), ]
+  
+  headline_inflation <- last(cpi[cpi$type == "Quarterly", ]$inflation_label)
+  last_date <- format(last(cpi[cpi$type == "Quarterly", ]$date), "%B %Y")
+  
+  g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
+    geom_xspline() +
+    geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 50, size = 5, show.legend = FALSE) +
+    scale_x_date(name = NULL, expand = expansion(mult = c(0.05, 0.06))) +
+    scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
+    scale_colour_manual(name = NULL, values = c("#008698", "#232C31")) +
+    scale_size_manual(values = c("Quarterly" = 0.7, "Annual" = 1), guide = guide_none()) +
+    theme_classic(base_size = 16, base_family = "Lato") +
+    theme(
+      panel.grid.major.y = element_line(),
+      plot.background = element_rect("lightyellow"),
+      panel.background = element_blank(),
+      legend.position = "bottom", legend.background = element_blank(),
+      legend.margin = margin(t = -10)
+    ) +
+    labs(
+      title = paste0("CPI inflation in Australia is currently at ", headline_inflation),
+      subtitle = paste0("Data up to ", last_date),
+      caption = "Data: ABS. Chart: @nwbort"
+      )
   
   print(g)
 }
