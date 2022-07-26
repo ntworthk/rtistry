@@ -18,7 +18,8 @@ library(readabs)
 library(dplyr)
 library(scales)
 library(ggalt)
-
+library(ggdirectlabel)
+♥
 #* @apiTitle Plumber Example API
 
 #* Plot a histogram
@@ -240,7 +241,8 @@ function(since = 2000){
   
   g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
     geom_xspline() +
-    geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 50, size = 5, show.legend = FALSE) +
+    geom_finallabel(data = function(x) {filter(x, type == "Quarterly")}, aes(label = inflation_label), size = 5, show.legend = FALSE) +
+    # geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 50, size = 5, show.legend = FALSE) +
     scale_x_date(name = NULL, expand = expansion(mult = c(0.05, 0.06))) +
     scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
     scale_colour_manual(name = NULL, values = c("#008698", "#232C31")) +
