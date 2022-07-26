@@ -19,7 +19,7 @@ library(dplyr)
 library(scales)
 library(ggalt)
 library(ggdirectlabel)
-♥
+
 #* @apiTitle Plumber Example API
 
 #* Plot a histogram
