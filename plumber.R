@@ -284,6 +284,8 @@ function(sport = "running"){
     col_types = "clld"
   )
   
-  select(data, week, distance)
+  data$rel_distance <- data$distance / max(c(data$distance, 1))
+  
+  data[, c("week", "distance", "rel_distance")]
   
 }
