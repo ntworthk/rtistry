@@ -264,3 +264,26 @@ function(since = 2000){
   
   print(g)
 }
+
+#* Exercise summary
+#* @serializer json
+#* @param sport running or cycling.
+#* @get /exercise/summary
+function(sport = "running"){
+  
+  if (sport == "running") {
+    gid <- "1956137224"
+  } else {
+    gid <- "888983572"
+  }
+  
+  data <- read_csv(
+    file = paste0("https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=", gid,"&format=csv"),
+    skip = 1,
+    col_names = c("week", "blank_1", "blank_2", "distance", "distance_per_day"),
+    col_types = "clld"
+  )
+  
+  select(data, week, distance)
+  
+}
