@@ -286,6 +286,12 @@ function(sport = "running"){
   
   data$rel_distance <- data$distance / max(c(data$distance, 1)) * 100
   
-  data[4:1, c("week", "distance", "rel_distance")]
+  data <- data[4:1, c("week", "distance", "rel_distance")]
+  
+  list(
+    week = data$week,
+    distance = data$distance,
+    rel_distance = data$rel_distance
+  )
   
 }
