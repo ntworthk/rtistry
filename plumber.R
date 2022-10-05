@@ -289,9 +289,10 @@ function(sport = "running"){
   data <- data[, c("week", "distance", "rel_distance")]
   
   list(
+    sport = sport,
     week = data$week,
     distance = data$distance,
-    rel_distance = data$rel_distance
+    rel_distance = round(data$rel_distance, digits = 1)
   )
   
 }
