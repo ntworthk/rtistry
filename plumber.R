@@ -19,6 +19,10 @@ library(dplyr)
 library(scales)
 library(ggalt)
 library(ggdirectlabel)
+library(httr)
+library(jsonlite)
+
+source("helpers.R")
 
 #* @apiTitle Plumber Example API
 
@@ -293,6 +297,90 @@ function(sport = "running"){
     week = data$week,
     distance = data$distance,
     rel_distance = round(data$rel_distance, digits = 1)
+  )
+  
+}
+
+#* Get now playing
+#* @serializer unboxedJSON
+#* @get /nowplaying
+function() {
+  authorization <- get_spotify_authorization_code()
+  base_url <- "https://api.spotify.com/v1/me/player/currently-playing"
+  params <- list(market = NULL, additional_types = "episode")
+  res <- RETRY("GET", base_url, config(token = authorization), 
+               query = params, encode = "json")
+  stop_for_status(res)
+  
+  if (res$status_code == 204) {
+    res <- list(
+      item = list(
+        name = "Nothing playing",
+        artists = list(
+          name = ""
+        ),
+        album = list(
+          name = "",
+          images = list(
+            url = ""
+          ),
+          uri = ""
+        ),
+        is_playing = "FALSE",
+        external_urls = list(
+          spotify = ""
+        )
+      )
+    )
+  } else {
+    res <- fromJSON(content(res, as = "text", encoding = "UTF-8"), 
+                    flatten = TRUE)
+    
+    if (res$currently_playing_type == "episode") {
+      
+      # reformat into style of song
+      res <- list(
+        item = list(
+          name = res$item$name,
+          artists = list(
+            name = res$item$show$publisher
+          ),
+          album = list(
+            name = res$item$show$name,
+            images = list(
+              url = res$item$show$images$url
+            ),
+            uri = res$item$show$uri
+          ),
+          external_urls = list(
+            spotify = res$item$external_urls$spotify
+          )
+        ),
+        is_playing = res$is_playing
+      )
+      
+    }
+    
+  }
+  
+  if ("is_local" %in% names(res$item)) {
+    
+    if (res$item$is_local) {
+      
+      res$item$album$images <- ""
+      res$item$album$uri <- ""
+    }
+    
+  }
+  
+  list(
+    name = res$item$name,
+    artist = paste0(res$item$artists$name, collapse = ", "),
+    album = res$item$album$name,
+    album_art = res$item$album$images$url[1],
+    is_playing = res$is_playing,
+    url_spotify = res$item$external_urls$spotify,
+    uri = res$item$album$uri
   )
   
 }
