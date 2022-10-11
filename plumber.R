@@ -322,7 +322,7 @@ function() {
         album = list(
           name = "",
           images = list(
-            url = "images/cardioid.png"
+            url = "images/nothing_playing.png"
           ),
           uri = ""
         ),
