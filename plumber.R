@@ -322,13 +322,13 @@ function() {
         album = list(
           name = "",
           images = list(
-            url = ""
+            url = "images/cardioid.png"
           ),
           uri = ""
         ),
         is_playing = "FALSE",
         external_urls = list(
-          spotify = ""
+          spotify = "https://open.spotify.com/playlist/0K4OmUbmC92owGTqSRczaE"
         )
       )
     )
