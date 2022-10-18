@@ -8,6 +8,7 @@ library(magrittr)
 library(sf)
 library(osmdata)
 library(rsvg)
+library(digest)
 
 get_roads <- function(city) {
   
@@ -39,16 +40,24 @@ set_road_width <- function(roads) {
   
 }
 
-buffer_point <- function(point, radius) {
+buffer_point <- function(point, country, radius) {
+  
+  espg <- c("AUS" = 3577, "NZL" = 27200)
+  
+  if (!country %in% names(espg)) {
+    stop("Error - country not coded")
+  }
+  
+  to_unit <- espg[[country]]
   
   point |> 
-    st_transform(3577) |> 
+    st_transform(to_unit) |> 
     st_buffer(radius) |> 
     st_transform(4326)
   
 }
 
-generate_radius_map <- function(coords, title, radius = 5000, base_size = 16, theme = "darkmode", quiet = FALSE) {
+generate_radius_map <- function(coords, title, country, radius = 5000, base_size = 16, theme = "darkmode", quiet = FALSE) {
   
   # Assume wrong way around if so - eg if copied from Google Maps
   if (coords[1] < 0) {
@@ -57,19 +66,19 @@ generate_radius_map <- function(coords, title, radius = 5000, base_size = 16, th
   
   centre_point <- st_sfc(st_point(coords), crs = 4326)
   
-  centre_area <- buffer_point(centre_point, radius)
+  centre_area <- buffer_point(centre_point, country, radius)
   
   point_size <- 100
   
-  centre_point_circle <- buffer_point(centre_point, point_size)
-  centre_point_circle_outline <- buffer_point(centre_point, point_size * 1.2)
-  centre_point_circle_outline_outline <- buffer_point(centre_point, point_size * 1.25)
+  centre_point_circle <- buffer_point(centre_point, country, point_size)
+  centre_point_circle_outline <- buffer_point(centre_point, country, point_size * 1.2)
+  centre_point_circle_outline_outline <- buffer_point(centre_point, country, point_size * 1.25)
   
   if (!quiet) {
     cat("Getting road data...\n")
   }
   # Check if already created
-  hash <- paste0("hash_", hash)
+  hash <- paste0("hash_", digest(centre_area))
   if (file.exists(hash)) {
     cat("Already downloaded the deta...loading from cache\n")
     roads <- read_rds(hash)
@@ -149,7 +158,8 @@ details <- tibble(
                 c(-33.887, 151.140)),
   title = c("PAPAKURA",
             "MOUNT ALBERT",
-            "HOME")
+            "HOME"),
+  country = c("NZL", "NZL", "AUS")
 )
 
 graphs <- pmap(details, generate_radius_map, theme = "light", base_size = 50)
