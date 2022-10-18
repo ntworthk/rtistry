@@ -301,6 +301,24 @@ function(sport = "running"){
   
 }
 
+#* Wedding summary
+#* @serializer json
+#* @get /wedding/guests
+function(){
+  
+  data <- read_csv(
+    file = paste0("https://docs.google.com/spreadsheets/d/1bOpX7ynvyUR4cuTmenj8ZQ-9UHv_ekYdovGUhP-YCuo/export?gid=395516908&format=csv"),
+    col_types = "d"
+  )
+  
+  list(
+    guests = data$guests
+  )
+  
+}
+
+
+
 #* Get now playing
 #* @serializer unboxedJSON
 #* @get /nowplaying
