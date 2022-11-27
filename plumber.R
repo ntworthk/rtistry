@@ -264,7 +264,7 @@ function(since = 2000){
       title = paste0("CPI inflation in Australia is currently at ", headline_inflation),
       subtitle = paste0("Data up to ", last_date),
       caption = "Data: ABS. Chart: @nwbort"
-      )
+    )
   
   print(g)
 }
@@ -300,6 +300,29 @@ function(sport = "running"){
   )
   
 }
+
+#* Exercise - distance to go to goal
+#* @serializer json
+#* @get /exercise/distance
+function(){
+  
+  gid <- "915433531"
+  
+  data <- read_csv(
+    file = paste0("https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=", gid,"&format=csv"),
+    skip = 1,
+    col_names = c("distance_to_go"),
+    col_types = "d"
+  )
+  
+  list(
+    distance = data$distance_to_go
+  )
+  
+}
+
+
+
 
 #* Wedding summary
 #* @serializer json
