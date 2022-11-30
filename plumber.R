@@ -303,8 +303,9 @@ function(sport = "running"){
 
 #* Exercise - distance to go to goal
 #* @serializer json
+#* @param per_day Distance to go per day (or total). Default FALSE.
 #* @get /exercise/distance
-function(){
+function(per_day = FALSE){
   
   gid <- "915433531"
   
@@ -315,8 +316,21 @@ function(){
     col_types = "d"
   )
   
+  days_to_go <- 1
+  
+  if (per_day) {
+    
+    cur_date <- Sys.Date()
+    if (Sys.timezone() == "Etc/UTC") {
+      cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
+    }
+    
+    days_to_go <- as.numeric(as.Date("2023-01-01") - cur_date, unit = "days")
+    
+  }
+  
   list(
-    distance = data$distance_to_go
+    distance = round(data$distance_to_go / days_to_go, digits = 2)
   )
   
 }
