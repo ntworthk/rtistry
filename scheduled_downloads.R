@@ -1,6 +1,7 @@
-frame_files <- lapply(sys.frames(), function(x) x$ofile)
-frame_files <- Filter(Negate(is.null), frame_files)
-PATH <- dirname(frame_files[[length(frame_files)]])
+initial.options <- commandArgs(trailingOnly = FALSE)
+file.arg.name <- "--file="
+script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+PATH <- dirname(script.name)
 download.file(
   "https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=915433531&format=csv",
   file.path(PATH, "data/distance_to_go.csv")
