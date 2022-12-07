@@ -276,13 +276,13 @@ function(since = 2000){
 function(sport = "running"){
   
   if (sport == "running") {
-    gid <- "1956137224"
+    file <- "data/running.csv"
   } else {
-    gid <- "888983572"
+    file <- "data/cycling.csv"
   }
   
   data <- read_csv(
-    file = paste0("https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=", gid,"&format=csv"),
+    file = file,
     skip = 1,
     col_names = c("week", "blank_1", "blank_2", "distance", "distance_per_day"),
     col_types = "clld"
@@ -307,10 +307,8 @@ function(sport = "running"){
 #* @get /exercise/distance
 function(per_day = FALSE){
   
-  gid <- "915433531"
-  
   data <- read_csv(
-    file = paste0("https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=", gid,"&format=csv"),
+    file = "data/distance_to_go.csv",
     skip = 1,
     col_names = c("distance_to_go"),
     col_types = "d"
@@ -344,7 +342,7 @@ function(per_day = FALSE){
 function(){
   
   data <- read_csv(
-    file = paste0("https://docs.google.com/spreadsheets/d/1bOpX7ynvyUR4cuTmenj8ZQ-9UHv_ekYdovGUhP-YCuo/export?gid=395516908&format=csv"),
+    file = "data/wedding_summary.csv",
     col_types = "d"
   )
   

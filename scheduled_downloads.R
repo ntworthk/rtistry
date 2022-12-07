@@ -1,0 +1,17 @@
+library(here)
+download.file(
+  "https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=915433531&format=csv",
+  here("data/distance_to_go.csv")
+)
+download.file(
+  "https://docs.google.com/spreadsheets/d/1bOpX7ynvyUR4cuTmenj8ZQ-9UHv_ekYdovGUhP-YCuo/export?gid=395516908&format=csv",
+  here("data/wedding_summary.csv")
+)
+download.file(
+  "https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=1956137224&format=csv",
+  here("data/running.csv")
+)
+download.file(
+  "https://docs.google.com/spreadsheets/d/1T9FPgB5FhqqS8wuWbGcGY-l9M7QZDIHY8-BORKXgo5o/export?gid=888983572&format=csv",
+  here("data/cycling.csv")
+)
