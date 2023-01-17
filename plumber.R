@@ -322,7 +322,7 @@ function(per_day = FALSE){
       cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
     }
     
-    days_to_go <- as.numeric(as.Date("2023-01-01") - cur_date, unit = "days")
+    days_to_go <- as.numeric(as.Date("2024-01-01") - cur_date, unit = "days")
     
   }
   
