@@ -310,8 +310,7 @@ function(per_day = FALSE){
   data <- read_csv(
     file = "data/distance_to_go.csv",
     skip = 1,
-    col_names = c("distance_to_go"),
-    col_types = "d"
+    col_names = c("distance_to_go")
   )
   
   days_to_go <- 1
