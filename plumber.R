@@ -224,7 +224,7 @@ function(since = 2000){
 #* @serializer png list(width = 1920, height = 1080, res = 200)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi
-function(since = 2000){
+function(since = 2000, monthly = FALSE){
   
   cpi <- read_cpi()
   
@@ -233,9 +233,9 @@ function(since = 2000){
   cpi <- cpi[!is.na(cpi$inflation), ]
   cpi$type <- "Quarterly"
   annual <- cpi[cpi$month == 6, ]
-  annual$type <- "Annual"
+  annual$type <- "Annual (June)"
   cpi <- rbind(cpi, annual)
-  cpi$type <- factor(cpi$type, c("Quarterly", "Annual"), ordered = TRUE)
+  cpi$type <- factor(cpi$type, c("Quarterly", "Annual (June)"), ordered = TRUE)
   cpi$inflation_label <- percent(cpi$inflation, accuracy = 0.1)
   
   cpi <- cpi[parse_number(as.character(cpi$date)) >= as.numeric(since), ]
@@ -243,14 +243,36 @@ function(since = 2000){
   headline_inflation <- last(cpi[cpi$type == "Quarterly", ]$inflation_label)
   last_date <- format(last(cpi[cpi$type == "Quarterly", ]$date), "%B %Y")
   
-  g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
+  if (monthly) {
+    
+    monthly_cpi <- read_abs(cat_no = "6484.0", tables = "1")
+    
+    monthly_cpi <- monthly_cpi[monthly_cpi$series == "Index Numbers ;  All groups CPI ;  Australia ;", ]
+    
+    monthly_cpi$inflation <- monthly_cpi$value / lag(monthly_cpi$value, n = 12) - 1
+    monthly_cpi$month <- as.numeric(str_sub(as.character(monthly_cpi$date), 6, 7))
+    monthly_cpi$type <- "Monthly"
+    monthly_cpi$inflation_label <- percent(monthly_cpi$inflation, accuracy = 0.1)
+    monthly_cpi$cpi <- monthly_cpi$value
+    
+    monthly_cpi <- monthly_cpi[!is.na(monthly_cpi$inflation), ]
+    
+    monthly_cpi <- monthly_cpi[, c("date", "cpi", "inflation", "month", "type", "inflation_label")]
+    
+    monthly_cpi <- monthly_cpi[parse_number(as.character(monthly_cpi$date)) >= as.numeric(since), ]
+    
+    cpi <- bind_rows(cpi, monthly_cpi)
+    
+  }
+  
+  g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, linewidth = type)) +
     geom_xspline() +
-    geom_finallabel(data = function(x) {filter(x, type == "Quarterly")}, aes(label = inflation_label), size = 5, show.legend = FALSE, nudge_x_perc = 0.5) +
+    geom_finallabel(data = function(x) {filter(x, type %in% c("Monthly", "Quarterly"))}, aes(label = inflation_label), size = 5, show.legend = FALSE, nudge_x_perc = 0.5) +
     # geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 50, size = 5, show.legend = FALSE) +
     scale_x_date(name = NULL, expand = expansion(mult = c(0.05, 0.06))) +
     scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
-    scale_colour_manual(name = NULL, values = c("#008698", "#232C31")) +
-    scale_size_manual(values = c("Quarterly" = 0.7, "Annual" = 1), guide = guide_none()) +
+    scale_colour_manual(name = NULL, values = c("Monthly" = "#c94b20", "Quarterly" = "#008698", "Annual (June)" = "#232C31")) +
+    scale_linewidth_manual(values = c("Monthly" = 0.5, "Quarterly" = 0.7, "Annual (June)" = 1), guide = guide_none()) +
     coord_cartesian(clip = "off") +
     theme_classic(base_size = 16, base_family = "Lato") +
     theme(
