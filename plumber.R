@@ -265,14 +265,14 @@ function(since = 2000, monthly = FALSE){
     
   }
   
-  g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, linewidth = type)) +
+  g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
     geom_xspline() +
     geom_finallabel(data = function(x) {filter(x, type %in% c("Monthly", "Quarterly"))}, aes(label = inflation_label), size = 5, show.legend = FALSE, nudge_x_perc = 0.5) +
     # geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 50, size = 5, show.legend = FALSE) +
     scale_x_date(name = NULL, expand = expansion(mult = c(0.05, 0.06))) +
     scale_y_continuous(name = "CPI inflation (YoY)", labels = scales::percent_format(accuracy = 1)) + 
     scale_colour_manual(name = NULL, values = c("Monthly" = "#c94b20", "Quarterly" = "#008698", "Annual (June)" = "#232C31")) +
-    scale_linewidth_manual(values = c("Monthly" = 0.5, "Quarterly" = 0.7, "Annual (June)" = 1), guide = guide_none()) +
+    scale_size_manual(values = c("Monthly" = 0.5, "Quarterly" = 0.7, "Annual (June)" = 1), guide = guide_none()) +
     coord_cartesian(clip = "off") +
     theme_classic(base_size = 16, base_family = "Lato") +
     theme(
