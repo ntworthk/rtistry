@@ -224,7 +224,7 @@ function(since = 2000){
 #* @serializer png list(width = 1920, height = 1080, res = 200)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi
-function(since = 2000, monthly = FALSE){
+function(since = 2000, monthly = TRUE){
   
   cpi <- read_cpi()
   
