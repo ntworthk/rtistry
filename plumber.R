@@ -160,7 +160,7 @@ function(max_length = 143, short = FALSE){
   if (short) {
     wisdom_lengths <- sapply(wisdom, nchar, simplify = TRUE, USE.NAMES = FALSE)
     
-    wisdom <- wisdom[wisdom_lengths < 60]
+    wisdom <- wisdom[wisdom_lengths < 30]
     
   } 
   
