@@ -145,7 +145,7 @@ function(colour = NULL){
 #* @serializer json
 #* @param max_length Maximum length of the quote to return.
 #* @get /wisdom
-function(max_length = 143){
+function(max_length = 143, short = FALSE){
   
   max_length <- as.integer(max_length)
   
@@ -156,7 +156,16 @@ function(max_length = 143){
   wisdom <- str_subset(wisdom, "^- ")
   wisdom <- str_subset(wisdom, "elated:", negate = TRUE)
   wisdom <- str_remove(wisdom, "- ")
+  
+  if (short) {
+    wisdom_lengths <- sapply(wisdom, nchar, simplify = TRUE, USE.NAMES = FALSE)
+    
+    wisdom <- wisdom[wisdom_lengths < 60]
+    
+  } 
+  
   wisdom <- sample(wisdom, 1)
+  
   wisdom_short <- ifelse(nchar(wisdom) > max_length + 3, paste0(str_extract(wisdom, paste0(".{", max_length, "}")), "..."), wisdom)
   
   wisdom_short_html <- str_replace_all(wisdom_short, "\\*\\*", "~")
