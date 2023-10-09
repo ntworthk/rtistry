@@ -467,3 +467,25 @@ function() {
   )
   
 }
+
+#* Get now playing
+#* @serializer unboxedJSON
+#* @get /top_tracks
+function(time_range = "short_term", limit = 1) {
+  authorization <- get_spotify_authorization_code()
+  
+  if (!time_range %in% c("short_term", "medium_term", "long_term")) {
+    time_range <- "short_term"
+  }
+  if (!is.numeric(limit) | limit < 1 | limit > 50) {
+    limit <- 1
+  }
+  
+  base_url <- paste0("https://api.spotify.com/v1/me/top/artists?time_range=", time_range, "&limit=", limit)
+  res <- RETRY("GET", base_url, config(token = authorization), 
+               encode = "json")
+  stop_for_status(res)
+  
+  list(url = content(res)$items[[1]]$images[[1]]$url)
+  
+}
