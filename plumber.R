@@ -25,11 +25,11 @@ library(jsonlite)
 source("helpers.R")
 
 #* @apiTitle Personal APIs
-#* @apiTag cardioid
-#* @apiTag random
-#* @apiTag data
-#* @apiTag exercise
-#* @apiTag music
+#* @apiTag cardioid APIs to make cardioids
+#* @apiTag random Random bunch of items
+#* @apiTag data Public data
+#* @apiTag exercise Exercise stats
+#* @apiTag music Spotify stats
 
 #* Plot a cardioid as an svg
 #* @serializer svg
