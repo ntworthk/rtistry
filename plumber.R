@@ -25,11 +25,16 @@ library(jsonlite)
 source("helpers.R")
 
 #* @apiTitle Personal APIs
+#* @apiTag cardioid
+#* @apiTag random
+#* @apiTag data
+#* @apiTag exercise
+#* @apiTag music
 
 #* Plot a cardioid as an svg
 #* @serializer svg
 #* @get /plot
-#* @apiTag cardioid
+#* @tag cardioid
 function(){
   col <- runif(3)
   
@@ -53,7 +58,7 @@ function(){
 #* Return a cardioid as an svg
 #* @serializer contentType list(type="image/svg+xml")
 #* @get /cardioid
-#* @apiTag cardioid
+#* @tag cardioid
 function(){
   
   img <- paste0(readLines(con = "cardioid.svg"), collapse = "")
@@ -71,7 +76,7 @@ function(){
 #* @param width Width of the outline. Default 2.
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /cardioid_outline
-#* @apiTag cardioid
+#* @tag cardioid
 function(width = 2, colour = NULL){
   
   img <- paste0(readLines(con = "cardioid.svg"), collapse = "")
@@ -108,7 +113,7 @@ function(width = 2, colour = NULL){
 #* @serializer png
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /png
-#* @apiTag cardioid
+#* @tag cardioid
 function(colour = NULL){
   
   
@@ -149,7 +154,7 @@ function(colour = NULL){
 #* @serializer json
 #* @param max_length Maximum length of the quote to return.
 #* @get /wisdom
-#* @apiTag random
+#* @tag random
 function(max_length = 143, short = FALSE){
   
   max_length <- as.integer(max_length)
@@ -200,7 +205,7 @@ function(max_length = 143, short = FALSE){
 #* @serializer svg list(width = 17.28, height = 9.72)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi/svg
-#* @apiTag data
+#* @tag data
 function(since = 2000){
   
   cpi <- read_cpi()
@@ -239,7 +244,7 @@ function(since = 2000){
 #* @serializer png list(width = 1920, height = 1080, res = 200)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi
-#* @apiTag data
+#* @tag data
 function(since = 2000, monthly = TRUE){
   
   cpi <- read_cpi()
@@ -311,7 +316,7 @@ function(since = 2000, monthly = TRUE){
 #* @serializer json
 #* @param sport running or cycling.
 #* @get /exercise/summary
-#* @apiTag exercise
+#* @tag exercise
 function(sport = "running"){
   
   if (sport == "running") {
@@ -344,7 +349,7 @@ function(sport = "running"){
 #* @serializer json
 #* @param per_day Distance to go per day (or total). Default FALSE.
 #* @get /exercise/distance
-#* @apiTag exercise
+#* @tag exercise
 function(per_day = FALSE){
   
   data <- read_csv(
@@ -375,7 +380,7 @@ function(per_day = FALSE){
 #* Get now playing
 #* @serializer unboxedJSON
 #* @get /nowplaying
-#* @apiTag music
+#* @tag music
 function() {
   authorization <- get_spotify_authorization_code()
   base_url <- "https://api.spotify.com/v1/me/player/currently-playing"
@@ -462,7 +467,7 @@ function() {
 #* @param time_range One of "short_term", "medium_term" or "long_term"
 #* @param limit Number of results to return
 #* @get /top_artists
-#* @apiTag music
+#* @tag music
 function(time_range = "short_term", limit = 1) {
   authorization <- get_spotify_authorization_code()
   
@@ -487,7 +492,7 @@ function(time_range = "short_term", limit = 1) {
 #* @param time_range One of "short_term", "medium_term" or "long_term"
 #* @param limit Number of results to return
 #* @get /top_tracks
-#* @apiTag music
+#* @tag music
 function(time_range = "short_term", limit = 1) {
   authorization <- get_spotify_authorization_code()
   
