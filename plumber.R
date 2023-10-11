@@ -24,9 +24,9 @@ library(jsonlite)
 
 source("helpers.R")
 
-#* @apiTitle Plumber Example API
+#* @apiTitle Personal APIs
 
-#* Plot a histogram
+#* Plot a cardioid as an svg
 #* @serializer svg
 #* @get /plot
 function(){
@@ -49,7 +49,7 @@ function(){
   print(g)
 }
 
-#* Plot a histogram
+#* Return a cardioid as an svg
 #* @serializer contentType list(type="image/svg+xml")
 #* @get /cardioid
 function(){
@@ -64,7 +64,7 @@ function(){
   
 }
 
-#* Plot a histogram
+#* Return a cardioid outline as an svg
 #* @serializer contentType list(type="image/svg+xml")
 #* @param width Width of the outline. Default 2.
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
@@ -101,7 +101,7 @@ function(width = 2, colour = NULL){
 
 
 
-#* Plot a histogram
+#* Return a cardioid outlnie as a png
 #* @serializer png
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /png
@@ -191,7 +191,7 @@ function(max_length = 143, short = FALSE){
   
 }
 
-#* Plot Australia's CPI
+#* Plot Australia's CPI as an svg
 #* @serializer svg list(width = 17.28, height = 9.72)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi/svg
@@ -363,27 +363,6 @@ function(per_day = FALSE){
   
 }
 
-
-
-
-#* Wedding summary
-#* @serializer json
-#* @get /wedding/guests
-function(){
-  
-  data <- read_csv(
-    file = "data/wedding_summary.csv",
-    col_types = "d"
-  )
-  
-  list(
-    guests = data$guests
-  )
-  
-}
-
-
-
 #* Get now playing
 #* @serializer unboxedJSON
 #* @get /nowplaying
@@ -468,8 +447,10 @@ function() {
   
 }
 
-#* Get now playing
+#* Get top artists
 #* @serializer unboxedJSON
+#* @param time_range One of "short_term", "medium_term" or "long_term"
+#* @param limit Number of results to return
 #* @get /top_artists
 function(time_range = "short_term", limit = 1) {
   authorization <- get_spotify_authorization_code()
@@ -486,12 +467,14 @@ function(time_range = "short_term", limit = 1) {
                encode = "json")
   stop_for_status(res)
   
-  list(url = content(res)$items[[1]]$images[[1]]$url)
+  list(url = unlist(lapply(content(res)$items, function(d) {d$images[[1]]$url})))
   
 }
 
-#* Get now playing
+#* Get top tracks
 #* @serializer unboxedJSON
+#* @param time_range One of "short_term", "medium_term" or "long_term"
+#* @param limit Number of results to return
 #* @get /top_tracks
 function(time_range = "short_term", limit = 1) {
   authorization <- get_spotify_authorization_code()
@@ -508,6 +491,6 @@ function(time_range = "short_term", limit = 1) {
                encode = "json")
   stop_for_status(res)
   
-  list(url = content(res)$items[[1]]$album$images[[1]]$url)
+  list(url = unlist(lapply(content(res)$items, function(d) {d$album$images[[1]]$url})))
   
 }
