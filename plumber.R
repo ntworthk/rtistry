@@ -24,6 +24,8 @@ library(jsonlite)
 
 source("helpers.R")
 
+valid_creds <- read_rds("valid_creds.rds")
+
 #* @apiTitle Personal APIs
 #* @apiTag cardioid APIs to make cardioids
 #* @apiTag random Random bunch of items
@@ -31,7 +33,18 @@ source("helpers.R")
 #* @apiTag exercise Exercise stats
 #* @apiTag music Spotify stats
 
+#* @filter auth
+function(req, res) {
+  if (length(req$argsQuery[["key"]]) == 0 || !req$argsQuery[["key"]] %in% valid_creds) {
+    res$status <- 401 # Unauthorized
+    return(list(error = "Authentication required"))
+  } else {
+    forward()
+  }
+}
+
 #* Plot a cardioid as an svg
+#* @preempt auth
 #* @serializer svg
 #* @get /plot
 #* @tag cardioid
@@ -56,6 +69,7 @@ function(){
 }
 
 #* Return a cardioid as an svg
+#* @preempt auth
 #* @serializer contentType list(type="image/svg+xml")
 #* @get /cardioid
 #* @tag cardioid
@@ -72,6 +86,7 @@ function(){
 }
 
 #* Return a cardioid outline as an svg
+#* @preempt auth
 #* @serializer contentType list(type="image/svg+xml")
 #* @param width Width of the outline. Default 2.
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
@@ -107,9 +122,8 @@ function(width = 2, colour = NULL){
   
 }
 
-
-
-#* Return a cardioid outlnie as a png
+#* Return a cardioid outline as a png
+#* @preempt auth
 #* @serializer png
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /png
@@ -151,6 +165,7 @@ function(colour = NULL){
 }
 
 #* Get some wisdom
+#* @preempt auth
 #* @serializer json
 #* @param max_length Maximum length of the quote to return.
 #* @get /wisdom
@@ -202,6 +217,7 @@ function(max_length = 143, short = FALSE){
 }
 
 #* Plot Australia's CPI as an svg
+#* @preempt auth
 #* @serializer svg list(width = 17.28, height = 9.72)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi/svg
@@ -241,6 +257,7 @@ function(since = 2000){
 }
 
 #* Plot Australia's CPI
+#* @preempt auth
 #* @serializer png list(width = 1920, height = 1080, res = 200)
 #* @param since Plot CPI starting from this year.
 #* @get /cpi
@@ -378,6 +395,7 @@ function(per_day = FALSE){
 }
 
 #* Get now playing
+#* @preempt auth
 #* @serializer unboxedJSON
 #* @get /nowplaying
 #* @tag music
