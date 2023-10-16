@@ -347,10 +347,11 @@ function(sport = "running"){
 
 #* Exercise - distance to go to goal
 #* @serializer json
-#* @param per_day Distance to go per day (or total). Default FALSE.
+#* @param time_period Distance to go for the rest of the "year", or "day", or "week" averages. Default "year".
+#* @param per_day Deprecated. Use time_period = "daily"
 #* @get /exercise/distance
 #* @tag exercise
-function(per_day = FALSE){
+function(time_period = "year", per_day = FALSE){
   
   data <- read_csv(
     file = "data/distance_to_go.csv",
@@ -358,18 +359,23 @@ function(per_day = FALSE){
     col_names = c("distance_to_go")
   )
   
-  days_to_go <- 1
-  
-  if (per_day) {
+  days_to_go <- case_when(
     
-    cur_date <- Sys.Date()
-    if (Sys.timezone() == "Etc/UTC") {
-      cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
-    }
+    per_day | time_period == "day" ~ {
+      
+      cur_date <- Sys.Date()
+      
+      if (Sys.timezone() == "Etc/UTC") {
+        cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
+      }
+      
+      as.numeric(as.Date("2024-01-01") - cur_date, unit = "days")
+    },
+    time_period == "week" ~ 7,
+    TRUE ~ 1
     
-    days_to_go <- as.numeric(as.Date("2024-01-01") - cur_date, unit = "days")
-    
-  }
+  )
+
   
   list(
     distance = round(data$distance_to_go / days_to_go, digits = 2)
