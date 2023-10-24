@@ -375,7 +375,7 @@ function(time_period = "year", per_day = FALSE){
     TRUE ~ 1
     
   )
-
+  
   
   list(
     distance = round(data$distance_to_go / days_to_go, digits = 2)
@@ -523,7 +523,7 @@ function(time_range = "short_term", limit = 1) {
 #* @param parcel_id
 #* @get /parcel
 #* @tag random
-function(parcel_id = "MZ8500709501000964506") {
+function(parcel_id = "MZ8500709501000964506", wrap = 10) {
   
   cookies = c(
     `datadome` = "2fIPF4P99okdf1Ey_plGkBeHMXGkciGt_ZntX4l0h1vxSbxTcw0GQy7nnNFbV78qqomU8qi2oF2y2JLQnOpUHDhyAHZw73MQMTwxni4eAANqiPDJ8mAmtekaZSOhGiju",
@@ -551,7 +551,15 @@ function(parcel_id = "MZ8500709501000964506") {
   )
   
   status <- content(res)$articles[[1]]$trackStatusOfArticle
+  descrip <- content(res)$articles[[1]]$details[[1]]$events[[1]]$description
+  descrip_format <- str_wrap(descrip, width = wrap)
   
-  list(id = parcel_id, status = status, status_format = gsub(" ", "\n", status))
+  list(
+    id = parcel_id,
+    status = status,
+    status_format = gsub(" ", "\n", status),
+    descrip = descrip,
+    descrip_format = descrip_format
+  )
   
 }
