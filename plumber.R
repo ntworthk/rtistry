@@ -550,6 +550,8 @@ function(parcel_id = "MZ8500709501000964506") {
     httr::set_cookies(.cookies = cookies)
   )
   
-  list(id = parcel_id, status = content(res)$articles[[1]]$trackStatusOfArticle)
+  status <- content(res)$articles[[1]]$trackStatusOfArticle
+  
+  list(id = parcel_id, status = status, status_format = gsub(" ", "\n", status))
   
 }
