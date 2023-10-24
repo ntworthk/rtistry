@@ -517,3 +517,39 @@ function(time_range = "short_term", limit = 1) {
   list(url = unlist(lapply(content(res)$items, function(d) {d$album$images[[1]]$url})))
   
 }
+
+#* Get parcel
+#* @serializer unboxedJSON
+#* @param parcel_id
+#* @get /parcel
+#* @tag random
+function(parcel_id = "MZ8500709501000964506") {
+  
+  cookies = c(
+    `datadome` = "2fIPF4P99okdf1Ey_plGkBeHMXGkciGt_ZntX4l0h1vxSbxTcw0GQy7nnNFbV78qqomU8qi2oF2y2JLQnOpUHDhyAHZw73MQMTwxni4eAANqiPDJ8mAmtekaZSOhGiju",
+    `at_check` = "true",
+    `AMCVS_0A2D38B352782F1E0A490D4C%40AdobeOrg` = "1",
+    `mbox` = "session#229e41e595b44c63af8680d7769ec190#1698114793",
+    `AMCV_0A2D38B352782F1E0A490D4C%40AdobeOrg` = "1176715910|MCIDTS|19655|MCMID|91415930523822547019171594295863950380|MCAID|NONE|MCOPTOUT-1698120149s|NONE|vVersion|5.4.0"
+  )
+  
+  
+  headers = c(
+    `AP_CHANNEL_NAME` = "WEB_DETAIL",
+    `Accept` = "application/json, text/plain, */*",
+    `Accept-Language` = "en-AU,en-NZ;q=0.9,en-GB;q=0.8,en-US;q=0.7,en;q=0.6",
+    `Cache-Control` = "no-cache",
+    `User-Agent` = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+    `api-key` = "d11f9456-11c3-456d-9f6d-f7449cb9af8e",
+    `Referer` = "https://auspost.com.au/"
+  )
+  
+  res <- httr::GET(
+    url = paste0("https://digitalapi.auspost.com.au/shipmentsgatewayapi/watchlist/shipments/", parcel_id),
+    httr::add_headers(.headers=headers),
+    httr::set_cookies(.cookies = cookies)
+  )
+  
+  list(id = parcel_id, status = content(res)$articles[[1]]$trackStatusOfArticle)
+  
+}
