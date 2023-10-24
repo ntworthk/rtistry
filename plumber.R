@@ -552,7 +552,7 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
   
   status <- content(res)$articles[[1]]$trackStatusOfArticle
   descrip <- content(res)$articles[[1]]$details[[1]]$events[[1]]$description
-  descrip_format <- str_wrap(descrip, width = wrap)
+  descrip_format <- str_wrap(descrip, width = as.integer(wrap))
   
   list(
     id = parcel_id,
