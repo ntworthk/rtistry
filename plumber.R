@@ -21,6 +21,10 @@ library(ggalt)
 library(ggdirectlabel)
 library(httr)
 library(jsonlite)
+library(rvest)
+library(ggtext)
+library(purrr)
+library(lubridate)
 
 source("helpers.R")
 
@@ -563,3 +567,222 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
   )
   
 }
+
+#* Get ACCC chart
+#* @serializer png list(width = 15, height = 15, units = "cm")
+#* @param since Plot decisions starting from this year.
+#* @get /accc
+#* @tag data
+function(since = 2014){
+  
+  url <- "https://www.accc.gov.au/public-registers/browse-public-registers?f%5B0%5D=type%3Aacccgov_informal_merger_review"
+  
+  pg <- read_html(url)
+  
+  decision_types <- html_attr(html_elements(pg, xpath = '//*[(@id = "accc-facet-area__title--acccgov_outcome")]//a'), "href")
+  
+  urls <- paste0("https://www.accc.gov.au/", decision_types)
+  
+  decisions <- map_dfr(urls, function(url) {
+    
+    pg <- read_html(url)
+    pages <- html_elements(pg, css = ".page-item--last")
+    pages <- html_element(pages, "a")
+    pages <- html_attr(pages, "href")
+    pages <- str_extract(pages, "[0-9]+$")
+    pages <- as.integer(pages)
+    
+    map_dfr(0:pages, function(page_num) {
+      
+      current_url <- paste0(url, "&page=", page_num)
+      pg <- read_html(current_url)
+      
+      accc_card_full_width <- html_elements(pg, css = ".accc-card--full-width")
+      
+      titles <- html_element(accc_card_full_width, css = ".field--name-node-title")
+      titles <- html_text2(titles)
+      
+      links <- html_element(accc_card_full_width, css = ".field--name-node-title")
+      links <- html_children(links)
+      links <- html_children(links)
+      links <- html_attr(links, "href")
+      
+      outcomes <- accc_card_full_width
+      outcomes <- html_element(outcomes, css = ".accc-card__metadata")
+      outcomes <- html_element(outcomes, css = ".field--name-field-acccgov-pub-reg-outcome")
+      outcomes <- html_element(outcomes, css = ".field__item")
+      outcomes <- html_text2(outcomes)
+      
+      date_completed <- accc_card_full_width
+      date_completed <- html_element(date_completed, css = ".accc-card__metadata")
+      date_completed <- html_element(date_completed, css = ".field--name-field-acccgov-pub-reg-end-date")
+      date_completed <- html_element(date_completed, css = ".field__item")
+      date_completed <- html_text2(date_completed)
+      
+      industry <- accc_card_full_width
+      industry <- html_element(industry, css = ".accc-card__metadata")
+      industry <- html_element(industry, css = ".field--name-field-acccgov-industry")
+      industry <- map(industry, function(node) {
+          
+          html_text2(html_elements(node, css = ".field__item"))
+          
+        })
+      
+      status <- accc_card_full_width
+      status <- html_element(status, css = ".accc-card__metadata")
+      status <- html_element(status, css = ".field--name-field-acccgov-pub-reg-status")
+      status <- html_element(status, css = ".field__item")
+      status <- html_text2(status)
+      
+      tibble(
+        title = titles,
+        link = links,
+        outcome = outcomes,
+        date_completed = date_completed,
+        industry = industry,
+        status = status
+      )
+      
+    })
+    
+    
+  })
+
+  url <- "https://www.accc.gov.au/public-registers/browse-public-registers?f%5B0%5D=acccgov_status%3A423&f%5B1%5D=type%3Aacccgov_informal_merger_review"
+  
+  pg <- read_html(url)
+  
+  accc_card_full_width <- html_elements(pg, css = ".accc-card--full-width")
+  
+  titles <- accc_card_full_width %>% 
+    html_element(css = ".field--name-node-title") %>% 
+    html_text2()
+  
+  links <- accc_card_full_width %>% 
+    html_element(css = ".field--name-node-title") %>% 
+    html_children() %>% 
+    html_children() %>% 
+    html_attr("href")
+  
+  date_commenced <- accc_card_full_width %>% 
+    html_element(css = ".accc-card__metadata") %>% 
+    html_element(css = ".field--name-field-acccgov-pub-reg-date") %>% 
+    html_element(css = ".field__item") %>% 
+    html_text2()
+  
+  industry <- accc_card_full_width %>% 
+    html_element(css = ".accc-card__metadata") %>% 
+    html_element(css = ".field--name-field-acccgov-industry") %>% 
+    map(function(node) {
+      
+      node %>% 
+        html_elements(css = ".field__item") %>% 
+        html_text2()
+      
+    })
+  
+  status <- accc_card_full_width %>% 
+    html_element(css = ".accc-card__metadata") %>% 
+    html_element(css = ".field--name-field-acccgov-pub-reg-status") %>% 
+    html_element(css = ".field__item") %>% 
+    html_text2()
+  
+  under_condsideration <- tibble(
+    title = titles,
+    link = links,
+    date_commenced = date_commenced,
+    industry = industry,
+    status = status
+  )
+  
+  decisions_by_year <- decisions %>% 
+    bind_rows(under_condsideration) %>% 
+    mutate(
+      date_completed = ifelse(is.na(date_completed), date_commenced, date_completed),
+      outcome = ifelse(is.na(outcome), status, outcome)
+    ) %>%  
+    mutate(date_completed2 = parse_date(date_completed, format = "%d %B %Y")) %>%
+    count(year = year(date_completed2), outcome) %>%
+    arrange(desc(n)) %>% 
+    mutate(outcome = factor(outcome,
+                            levels = c(
+                              "Under consideration", 
+                              "No decision", 
+                              "Withdrawn", 
+                              "Not opposed subject to undertakings", 
+                              "Not opposed", 
+                              "Opposed"
+                            ),
+                            ordered = TRUE)) %>% 
+    group_by(year) %>% 
+    mutate(p = n / sum(n)) %>% 
+    ungroup()
+  
+  outcomes <- decisions_by_year %>% pull(outcome) %>% levels()
+  
+  outcome_colours <- c(
+    "Opposed" = "#E14D18",
+    "Not opposed" = "#008698",
+    "Not opposed subject to undertakings" = "#8AC1AF",
+    "No decision" = "#232C31",
+    "Withdrawn" = "#ECAA2B",
+    "Under consideration" = "#AA2E60"
+  )
+  
+  st <- decisions_by_year %>%
+    filter(year == 2023, outcome == "Opposed") %>%
+    pull(n) %>% 
+    paste0(" mergers opposed")
+  
+  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in 2023")
+  
+  g <- decisions_by_year %>% 
+    filter(year >= since) %>% 
+    ggplot(aes(x = year, y = n, fill = outcome)) +
+    geom_col(position = position_stack()) +
+    geom_hline(yintercept = 0, linewidth = 1) +
+    geom_text(
+      data = \(x) filter(x, year == max(year)) %>% mutate(year = Inf),
+      aes(label = str_wrap(outcome, width = 20), colour = outcome),
+      hjust = 0,
+      position = position_stack(vjust = 0.5),
+      size = 2,
+      lineheight = 0.7
+    ) +
+    geom_text(
+      data = \(x) filter(x, year == max(year) | year == min(year)),
+      aes(label = scales::number(n, accuracy = 1)),
+      position = position_stack(vjust = 0.5),
+      colour = "white", size = 2.5
+    ) +
+    scale_x_continuous(
+      breaks = seq.int(2000, 2023, 1),
+      expand = expansion(mult = c(0.005, 0.005))
+    ) +
+    scale_y_continuous(
+      expand = expansion(mult = c(0.003, 0.05))
+    ) +
+    scale_fill_manual(values = outcome_colours, aesthetics = c("colour", "fill"), guide = guide_none()) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = "Informal merger reviews", fill = NULL,
+         title = "Historic number of ACCC informal merger oppositions",
+         subtitle = st,
+         caption = "Year of decision based on 'date completed' for concluded reviews and 'date commenced' for ongoing reviews.\nSource: HoustonKemp analysis of ACCC website. Chart by Nick Twort") +
+    theme_minimal(base_family = "Aptos", base_size = 12) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.background = element_blank(),
+      plot.background = element_blank(),
+      legend.background = element_blank(),
+      legend.position = "bottom",
+      strip.background = element_rect(fill = "#E6E7E8"),
+      plot.margin = margin(2, 55, 2, 2, unit = "pt"),
+      plot.caption = element_text(size = 6),
+      plot.subtitle = element_markdown()
+    )
+  
+  
+  print(g)
+}
+
