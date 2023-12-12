@@ -743,7 +743,7 @@ function(since = 2014){
     geom_hline(yintercept = 0, linewidth = 1) +
     geom_text(
       data = \(x) filter(x, year == max(year)) %>% mutate(year = Inf),
-      aes(label = str_wrap(outcome, width = 20), colour = outcome),
+      aes(label = str_wrap(outcome, width = 15), colour = outcome),
       hjust = 0,
       position = position_stack(vjust = 0.5),
       size = 2,
