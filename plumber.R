@@ -569,7 +569,7 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
 }
 
 #* Get ACCC chart
-#* @serializer png list(width = 15, height = 15, units = "cm")
+#* @serializer png list(width = 15, height = 15, units = "cm", res = 200)
 #* @param since Plot decisions starting from this year.
 #* @get /accc
 #* @tag data
