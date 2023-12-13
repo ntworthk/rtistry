@@ -730,11 +730,15 @@ function(since = 2014){
   )
   
   st <- decisions_by_year %>%
-    filter(year == 2023, outcome == "Opposed") %>%
-    pull(n) %>% 
+    filter(year == max(year), outcome == "Opposed") %>%
+    pull(n)
+  
+  st <- ifelse(length(st) == 0, "No", st) |> 
     paste0(" mergers opposed")
   
-  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in 2023")
+  st_year <- max(decisions_by_year$year)
+  
+  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
   
   g <- decisions_by_year %>% 
     filter(year >= since) %>% 
