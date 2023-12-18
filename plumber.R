@@ -484,7 +484,7 @@ function(time_range = "short_term", limit = 1L) {
   if (!time_range %in% c("short_term", "medium_term", "long_term")) {
     time_range <- "short_term"
   }
-  limt <- as.integer(numeric)
+  limit <- as.integer(limit)
   if (is.na(limit) | limit < 1 | limit > 50) {
     limit <- 1
   }
