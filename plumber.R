@@ -555,6 +555,8 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
   )
   
   status <- content(res)$articles[[1]]$trackStatusOfArticle
+  status <- ifelse(is.null(status), "Waiting", status)
+  
   descrip <- content(res)$articles[[1]]$details[[1]]$events[[1]]$description
   descrip_format <- str_wrap(descrip, width = as.integer(wrap))
   
