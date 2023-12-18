@@ -478,7 +478,7 @@ function() {
 #* @param limit Number of results to return
 #* @get /top_artists
 #* @tag music
-function(time_range = "short_term", limit = 1) {
+function(time_range = "short_term", limit = 1L) {
   authorization <- get_spotify_authorization_code()
   
   if (!time_range %in% c("short_term", "medium_term", "long_term")) {
