@@ -555,11 +555,31 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
     httr::set_cookies(.cookies = cookies)
   )
   
+  if (status_code(res) != 200) {
+    return(
+      list(
+        id = parcel_id,
+        status = "Not found",
+        status_format = gsub(" ", "\n", "Not found"),
+        descrip = "Not found",
+        descrip_format = gsub(" ", "\n", "Not found")
+      )
+    )
+  }
+  
   status <- content(res)$articles[[1]]$trackStatusOfArticle
   status <- ifelse(is.null(status), "Waiting", status)
   
-  descrip <- content(res)$articles[[1]]$details[[1]]$events[[1]]$description
+  num_events <- length(content(res)$articles[[1]]$details[[1]]$events)
+  
+  if (num_events > 0) {
+    descrip <- content(res)$articles[[1]]$details[[1]]$events[[1]]$description
+  } else {
+    descrip <- ""
+  }
+  
   descrip_format <- str_wrap(descrip, width = as.integer(wrap))
+
   
   list(
     id = parcel_id,
