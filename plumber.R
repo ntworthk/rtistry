@@ -519,7 +519,10 @@ function(time_range = "short_term", limit = 1) {
                encode = "json")
   stop_for_status(res)
   
-  list(url = unlist(lapply(content(res)$items, function(d) {d$album$images[[1]]$url})))
+  list(
+    url = unlist(lapply(content(res)$items, function(d) {d$album$images[[1]]$url})),
+    title = unlist(lapply(content(res)$items, function(d) {d$name}))
+  )
   
 }
 
