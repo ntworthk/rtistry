@@ -113,7 +113,7 @@ function(width = 2, colour = NULL){
 
 
 
-#* Return a cardioid outlnie as a png
+#* Return a cardioid outline as a png
 #* @serializer png
 #* @param colour Colour of the outline as a hex code. Defaults to random colour.
 #* @get /png
@@ -363,19 +363,21 @@ function(time_period = "year", per_day = FALSE){
     col_names = c("distance_to_go")
   )
   
+  days_test <- {
+    
+    cur_date <- Sys.Date()
+    
+    if (Sys.timezone() == "Etc/UTC") {
+      cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
+    }
+    
+    as.numeric(as.Date("2025-01-01") - cur_date, unit = "days")
+  }
+  
   days_to_go <- case_when(
     
-    per_day | time_period == "day" ~ {
-      
-      cur_date <- Sys.Date()
-      
-      if (Sys.timezone() == "Etc/UTC") {
-        cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
-      }
-      
-      as.numeric(as.Date("2024-01-01") - cur_date, unit = "days")
-    },
-    time_period == "week" ~ 7,
+    per_day | time_period == "day" ~ days_test,
+    time_period == "week" ~ days_test / 7,
     TRUE ~ 1
     
   )
