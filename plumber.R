@@ -782,13 +782,13 @@ function(since = 2014){
       lineheight = 0.7
     ) +
     geom_text(
-      data = \(x) filter(x, year == max(year) | year == min(year)),
+      data = \(x) filter(x, year >= max(year) - 1 | year == min(year)),
       aes(label = scales::number(n, accuracy = 1)),
       position = position_stack(vjust = 0.5),
       colour = "white", size = 2.5
     ) +
     scale_x_continuous(
-      breaks = seq.int(2000, 2023, 1),
+      breaks = seq.int(2000, year(Sys.Date()), 1),
       expand = expansion(mult = c(0.005, 0.005))
     ) +
     scale_y_continuous(
