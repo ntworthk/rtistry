@@ -25,6 +25,7 @@ library(rvest)
 library(ggtext)
 library(purrr)
 library(lubridate)
+library(glue)
 
 source("helpers.R")
 
@@ -818,3 +819,22 @@ function(since = 2014){
   print(g)
 }
 
+#* Get departure board
+#* @param stop_ids The stop ids to lookup
+#* @get /departures
+#* @serializer json
+#* @tag data
+get_departure_board <- function(stop_ids = 213010) {
+  
+  stop_data <- map_dfr(stop_ids, get_formatted_data)
+  
+  # Output as htmlTable
+  stop_data %>% 
+    select(
+      `Due in` = due_in,
+      `Departure time` = departure_time,
+      Delay = minutes_late,
+      Route = route
+    )
+  
+}
