@@ -8,3 +8,5 @@ hash_*
 *.png
 *.svg
 credentials.R
+strava_creds.R
+.httr-strava-oauth

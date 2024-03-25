@@ -845,7 +845,14 @@ get_departure_board <- function(stop_ids = 213010) {
 #* @get /strava
 #* @serializer json
 #* @tag data
-update_strava <- function(id, name = NULL) {
+update_strava <- function(id, name = NULL, key) {
+  
+  source("strava_creds.R")
+  
+  if (key != strava_creds) {
+    return(list("status" = "error - not authorised"))
+  }
+  
   
   if (is.null(name)) {
     day_name <- as.character(wday(with_tz(Sys.time(), tzone = "Australia/Sydney"), label = TRUE, abbr = FALSE))
