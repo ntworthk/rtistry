@@ -585,7 +585,7 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
   }
   
   descrip_format <- str_wrap(descrip, width = as.integer(wrap))
-
+  
   
   list(
     id = parcel_id,
@@ -652,10 +652,10 @@ function(since = 2014){
       industry <- html_element(industry, css = ".accc-card__metadata")
       industry <- html_element(industry, css = ".field--name-field-acccgov-industry")
       industry <- map(industry, function(node) {
-          
-          html_text2(html_elements(node, css = ".field__item"))
-          
-        })
+        
+        html_text2(html_elements(node, css = ".field__item"))
+        
+      })
       
       status <- accc_card_full_width
       status <- html_element(status, css = ".accc-card__metadata")
@@ -676,7 +676,7 @@ function(since = 2014){
     
     
   })
-
+  
   url <- "https://www.accc.gov.au/public-registers/browse-public-registers?f%5B0%5D=acccgov_status%3A423&f%5B1%5D=type%3Aacccgov_informal_merger_review"
   
   pg <- read_html(url)
@@ -836,5 +836,47 @@ get_departure_board <- function(stop_ids = 213010) {
       Delay = minutes_late,
       Route = route
     )
+  
+}
+
+#* Update Strava activity
+#* @param id The activity ID
+#* @param name New activity name
+#* @get /strava
+#* @serializer json
+#* @tag data
+update_strava <- function(id, name = NULL) {
+  
+  if (is.null(name)) {
+    day_name <- as.character(wday(with_tz(Sys.time(), tzone = "Australia/Sydney"), label = TRUE, abbr = FALSE))
+    day_adjective <- tibble(
+      adjective = c(
+        "Majestic", "Maneuvering", "Martial", "Masterful", "Measured", "Meditative", "Meticulous", "Mighty", "Mindful", "Minimalist", "Momentous", "Monotonous", "Motivational", "Multifaceted", "Muscular", "MuscularlyDemanding", "Myriad", "Terrific", "Technical", "Tense", "Thrilling", "Thumping", "Tiring", "Tireless", "Titrating", "Torturous", "Towering", "Trampolining", "Treacherous", "Trendy", "Tricky", "Triumphant", "Turbulent", "Twirling", "Twitchy", "TirelesslyPrecise", "Wobbly", "Wondrous", "Wrenching", "Writhing", "Vigorous", "Vigilant", "Vigorous", "Winding", "Whimsical", "Wind-powered", "Wild", "Wince-inducing", "Workaholic", "Worthwhile", "Frantic", "Frenetic", "Free-flowing", "Frenzied", "Fulfilling", "Functional", "Fundamental", "Furious", "Fussy", "Futile", "Flashy", "Fluid", "Focused", "Forcing", "Formative", "Fortifying", "Flawless", "Flexible", "Flowing", "Formidable", "Fortuitous", "Frantic", "Frustrating", "Fun-loving", "Serene", "Spirited", "Spirited", "Spontaneous", "Sprinting", "Squishy", "Staggering", "Stagnant", "Stamina-Building", "Steady", "Stealthy", "Strenuous", "Structured", "Sweaty", "Swift", "Synchronized", "Systematic", "Skillful", "Slow-paced", "Smooth", "Soothing", "Splitting", "Sporty", "Stamina-draining", "Stimulating", "Strategic", "Strengthening", "Stretching", "Sweeping", "Synergistic"
+      )
+    ) |> 
+      distinct() |> 
+      mutate(first_letter = str_to_upper(str_sub(adjective, 1, 1))) |> 
+      semi_join(tibble(first_letter = str_sub(day_name, 1, 1)), by = join_by(first_letter)) |> 
+      slice_sample(n = 1) |> 
+      pull(adjective)
+    
+    name <- paste(str_to_sentence(day_adjective), day_name, "ride")
+    
+  }
+  
+  stoken <- config(token = readRDS('.httr-strava-oauth')[[1]])
+  
+  body <- list(
+    name = name
+  )
+  
+  res <- PUT(
+    paste0("https://www.strava.com/api/v3/activities/", id),
+    stoken,
+    body = body
+  )
+  
+  http_status(res)
+  
   
 }
