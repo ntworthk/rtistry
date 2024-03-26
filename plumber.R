@@ -875,7 +875,7 @@ update_strava <- function(id, name = NULL, key) {
     id <- str_extract(id, "activities(%2F|/)[0-9]+") |> str_remove("activities%2F|activities/")
   }
   
-  stoken <- config(token = readRDS('.httr-strava-oauth')[[1]])
+  stoken <- config(token = readRDS('.httr-oauth')[[1]])
   
   body <- list(
     name = name
