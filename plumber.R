@@ -890,6 +890,7 @@ update_strava <- function(id, name = NULL, key) {
     new_token <- content(res)
     ftkn$credentials$expires_at <- new_token$expires_at
     ftkn$credentials$refresh_token <- new_token$refresh_token
+    ftkn$credentials$access_token <- new_token$access_token
     tkn[[1]] <- ftkn
     saveRDS(tkn, '.httr-strava-oauth')
   }
