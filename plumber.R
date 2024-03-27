@@ -875,7 +875,25 @@ update_strava <- function(id, name = NULL, key) {
     id <- str_extract(id, "activities(%2F|/)[0-9]+") |> str_remove("activities%2F|activities/")
   }
   
-  stoken <- config(token = readRDS('.httr-oauth')[[1]])
+  tkn <- readRDS('.httr-strava-oauth')
+  ftkn <- tkn[[1]]
+  if (ftkn$credentials$expires_at < as.integer(Sys.time())) {
+    res <- POST(
+      "https://www.strava.com/api/v3/oauth/token",
+      body = list(
+        client_id = app_client_id,
+        client_secret = app_secret,
+        grant_type = "refresh_token",
+        refresh_token = tkn$credentials$refresh_token
+      )
+    )
+    new_token <- content(res)
+    ftkn$credentials$expires_at <- new_token$expires_at
+    ftkn$credentials$refresh_token <- new_token$refresh_token
+    tkn[[1]] <- ftkn
+    saveRDS(tkn, '.httr-strava-oauth')
+  }
+  stoken <- config(token = ftkn)
   
   body <- list(
     name = name
