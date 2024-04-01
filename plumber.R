@@ -884,11 +884,12 @@ update_strava <- function(id, name = NULL, key) {
         client_id = app_client_id,
         client_secret = app_secret,
         grant_type = "refresh_token",
-        refresh_token = tkn$credentials$refresh_token
+        refresh_token = ftkn$credentials$refresh_token
       )
     )
     new_token <- content(res)
     ftkn$credentials$expires_at <- new_token$expires_at
+    ftkn$credentials$expires_in <- new_token$expires_in
     ftkn$credentials$refresh_token <- new_token$refresh_token
     ftkn$credentials$access_token <- new_token$access_token
     tkn[[1]] <- ftkn
