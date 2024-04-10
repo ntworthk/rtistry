@@ -23,6 +23,6 @@ ftkn$credentials$expires_in <- new_token$expires_in
 ftkn$credentials$refresh_token <- new_token$refresh_token
 ftkn$credentials$access_token <- new_token$access_token
 tkn[[1]] <- ftkn
-saveRDS(tkn, file.path(PATH, '.httr-strava-oauth'))
+saveRDS(tkn, PATH)
 # }
 stoken <- config(token = ftkn)
