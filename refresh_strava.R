@@ -3,7 +3,9 @@ initial.options <- commandArgs(trailingOnly = FALSE)
 file.arg.name <- "--file="
 script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
 PATH <- dirname(script.name)
-tkn <- readRDS(file.path(PATH, '.httr-strava-oauth'))
+PATH <- ifelse(length(PATH) == 0, '.httr-strava-oauth', file.path(PATH, '.httr-strava-oauth'))
+
+tkn <- readRDS(PATH)
 ftkn <- tkn[[1]]
 # if (ftkn$credentials$expires_at < as.integer(Sys.time())) {
 res <- POST(
