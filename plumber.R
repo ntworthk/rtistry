@@ -288,11 +288,16 @@ function(since = 2000, monthly = TRUE){
     monthly_cpi <- monthly_cpi[parse_number(as.character(monthly_cpi$date)) >= as.numeric(since), ]
     
     cpi <- bind_rows(cpi, monthly_cpi)
+    headline_inflation <- last(cpi[cpi$type == "Monthly", ]$inflation_label)
+    last_date <- format(last(cpi[cpi$type == "Monthly", ]$date), "%B %Y")
+    
     
   }
   
   g <- ggplot(cpi, aes(x = date, y = inflation, colour = type, size = type)) +
+    annotate("rect", xmin = as.Date(-Inf), xmax = as.Date(Inf), ymin = 0.02, ymax = 0.03, fill = "lightblue", alpha = 0.4) +
     geom_xspline() +
+    geom_point() +
     geom_finallabel(data = function(x) {filter(x, type %in% c("Monthly", "Quarterly"))}, aes(label = inflation_label), size = 5, show.legend = FALSE, nudge_x_perc = 0.5) +
     # geom_text(data = function(x) {filter(x, date == max(date), type == "Quarterly")}, aes(label = inflation_label), hjust = 0, nudge_x = 50, size = 5, show.legend = FALSE) +
     scale_x_date(name = NULL, expand = expansion(mult = c(0.05, 0.06))) +
