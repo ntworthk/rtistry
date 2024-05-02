@@ -832,7 +832,7 @@ function(since = 2014){
 #* @tag data
 get_departure_board <- function(stop_ids = 213052, route = NULL) {
   
-  stop_data <- map_dfr(stop_ids, function(x, route) { get_formatted_data(x, limit = 5, route = route)})
+  stop_data <- map_dfr(stop_ids, function(x) { get_formatted_data(x, limit = 5, route = route)})
   
   # Output as htmlTable
   stop_data %>% 
