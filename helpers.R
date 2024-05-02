@@ -62,10 +62,15 @@ get_next_departures <- function(stop_id = 213010) {
   
 }
 
-format_stop_data <- function(stop_data, limit = 5) {
+format_stop_data <- function(stop_data, route = NULL, limit = 5) {
   
   if (!all(c("departureTimePlanned", "departureTimeEstimated", "number", "description") %in% colnames(stop_data))) {
     stop("Badly formed stop data")
+  }
+  
+  if (!is.null(route)) {
+    stop_data <- stop_data %>%
+      filter(description == route)
   }
   
   # Format for output
@@ -92,9 +97,9 @@ format_stop_data <- function(stop_data, limit = 5) {
   
 }
 
-get_formatted_data <- function(stop_id, limit = 5) {
+get_formatted_data <- function(stop_id, limit = 5, route = NULL) {
   
   get_next_departures(stop_id = stop_id) |> 
-    format_stop_data(limit = limit)
+    format_stop_data(route = route, limit = limit)
   
 }

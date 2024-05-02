@@ -826,12 +826,13 @@ function(since = 2014){
 
 #* Get departure board
 #* @param stop_ids The stop ids to lookup
+#* @param route Optional, name of route to filter to
 #* @get /departures
 #* @serializer json
 #* @tag data
-get_departure_board <- function(stop_ids = 213052) {
+get_departure_board <- function(stop_ids = 213052, route = NULL) {
   
-  stop_data <- map_dfr(stop_ids, get_formatted_data)
+  stop_data <- map_dfr(stop_ids, function(x, route) { get_formatted_data(x, limit = 5, route = route)})
   
   # Output as htmlTable
   stop_data %>% 
