@@ -829,7 +829,7 @@ function(since = 2014){
 #* @get /departures
 #* @serializer json
 #* @tag data
-get_departure_board <- function(stop_ids = 213010) {
+get_departure_board <- function(stop_ids = 213052) {
   
   stop_data <- map_dfr(stop_ids, get_formatted_data)
   
@@ -839,7 +839,8 @@ get_departure_board <- function(stop_ids = 213010) {
       `Due in` = due_in,
       `Departure time` = departure_time,
       Delay = minutes_late,
-      Route = route
+      Route = route,
+      Destination = dest
     )
   
 }

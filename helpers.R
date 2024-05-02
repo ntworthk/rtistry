@@ -40,7 +40,16 @@ get_next_departures <- function(stop_id = 213010) {
   
   # Extract and return relevant data
   stop_data <- map_dfr(stop_events, function(z) {
-    as_tibble(c(z['departureTimePlanned'], departureTimeEstimated = z[['departureTimeEstimated']], z$transportation[c('number', 'description')]))
+    as_tibble(
+      c(
+        z['departureTimePlanned'],
+        departureTimeEstimated = z[['departureTimeEstimated']],
+        z$transportation[c('number', 'description')],
+        stop = z$location$parent$disassembledName,
+        origin = z$transportation$origin$name,
+        dest = z$transportation$destination$name
+      )
+    )
   })
   
   # Add column if not exists
@@ -61,27 +70,23 @@ format_stop_data <- function(stop_data, limit = 5) {
   
   # Format for output
   stop_data %>% 
-    mutate(departureTimeEstimated = if_else(is.na(departureTimeEstimated), departureTimePlanned, departureTimeEstimated)) %>% 
-    mutate(departure_time = as_datetime(departureTimeEstimated, tz = "UTC")) %>% 
-    mutate(departureTimePlanned = as_datetime(departureTimePlanned, tz = "UTC")) %>% 
-    mutate(across(c(departure_time, departureTimePlanned), \(x) with_tz(x, tzone = "Australia/Sydney"))) %>% 
     mutate(
+      departureTimeEstimated = if_else(is.na(departureTimeEstimated), departureTimePlanned, departureTimeEstimated),
+      departure_time = as_datetime(departureTimeEstimated, tz = "UTC"),
+      departureTimePlanned = as_datetime(departureTimePlanned, tz = "UTC"),
+      across(c(departure_time, departureTimePlanned), \(x) with_tz(x, tzone = "Australia/Sydney")),
       minutes_late = as.numeric(departure_time - departureTimePlanned, units = "mins"),
       minutes_late = case_when(
         minutes_late == 0 ~  "On time",
-        minutes_late < 0 ~ as.character(glue("{date_format('%H:%M', tz = 'Australia/Sydney')(departureTimePlanned)} running {-minutes_late} minute{if_else(abs(minutes_late) == 1, '', 's')} early")),
-        minutes_late > 0 ~ as.character(glue("{date_format('%H:%M', tz = 'Australia/Sydney')(departureTimePlanned)} running {minutes_late} minute{if_else(abs(minutes_late) == 1, '', 's')} late"))
-      )
-    ) %>% 
-    mutate(
+        minutes_late < 0 ~ as.character(glue("{scales::date_format('%H:%M', tz = 'Australia/Sydney')(departureTimePlanned)} running {-minutes_late} minute{if_else(abs(minutes_late) == 1, '', 's')} early")),
+        minutes_late > 0 ~ as.character(glue("{scales::date_format('%H:%M', tz = 'Australia/Sydney')(departureTimePlanned)} running {minutes_late} minute{if_else(abs(minutes_late) == 1, '', 's')} late"))
+      ),
       minutes_from_now = floor(as.numeric(departure_time - Sys.time(), units = "mins")),
-      departure_time = date_format("%H:%M", tz = "Australia/Sydney")(departure_time)
-    ) %>% 
-    mutate(
+      departure_time = scales::date_format("%H:%M", tz = "Australia/Sydney")(departure_time),
       id = row_number()
     ) %>% 
     head(limit) %>% 
-    select(id, due_in = minutes_from_now, departure_time, minutes_late, route = description) |> 
+    select(id, due_in = minutes_from_now, departure_time, minutes_late, route = description, dest) |> 
     arrange(due_in)
   
   
@@ -93,5 +98,3 @@ get_formatted_data <- function(stop_id, limit = 5) {
     format_stop_data(limit = limit)
   
 }
-
-
