@@ -879,7 +879,7 @@ update_strava <- function(id, name = NULL, description = NULL, key) {
   }
   
   if (is.null(description)) {
-    description <- "The name of activity has been powered by GPTwort."
+    description <- "The name of this activity has been powered by GPTwort."
   }
   
   if (str_detect(id, "http")) {
