@@ -421,7 +421,7 @@ function() {
           ),
           uri = ""
         ),
-        is_playing = "FALSE",
+        is_playing = FALSE,
         external_urls = list(
           spotify = "https://open.spotify.com/playlist/0K4OmUbmC92owGTqSRczaE"
         )
