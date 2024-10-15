@@ -849,10 +849,13 @@ get_departure_board <- function(stop_ids = 213052, route = NULL) {
 #* Update Strava activity
 #* @param id The activity ID
 #* @param name New activity name
+#* @param description New activity description
+#* @param key Authentication key
+#* @param activity URI encoded 
 #* @get /strava
 #* @serializer json
 #* @tag data
-update_strava <- function(id, name = NULL, description = NULL, key) {
+update_strava <- function(id, name = NULL, description = NULL, key, activity = NULL) {
   
   source("strava_creds.R")
   
@@ -880,6 +883,10 @@ update_strava <- function(id, name = NULL, description = NULL, key) {
   
   if (is.null(description)) {
     description <- "The name of this activity has been powered by GPTwort."
+  }
+  
+  if (!is.null(activity)) {
+    description <- activity
   }
   
   if (str_detect(id, "http")) {
