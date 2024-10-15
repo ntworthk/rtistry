@@ -26,6 +26,7 @@ library(ggtext)
 library(purrr)
 library(lubridate)
 library(glue)
+library(openai)
 
 source("helpers.R")
 
@@ -852,10 +853,11 @@ get_departure_board <- function(stop_ids = 213052, route = NULL) {
 #* @param description New activity description
 #* @param key Authentication key
 #* @param activity URI encoded 
+#* @param use_gpt Use openAI to generate title
 #* @get /strava
 #* @serializer json
 #* @tag data
-update_strava <- function(id, name = NULL, description = NULL, key, activity = NULL) {
+update_strava <- function(id, name = NULL, description = NULL, key, activity = NULL, use_gpt = TRUE) {
   
   source("strava_creds.R")
   
@@ -882,12 +884,32 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
   }
   
   if (is.null(description)) {
-    description <- "The name of this activity has been powered by GPTwort."
+    description <- "The name of this activity has been powered by GPTwortv3."
   }
   
-  if (!is.null(activity)) {
-    description <- activity
+  if (use_gpt) {
+    if (!is.null(activity)) {
+      activity <- paste0('{"', str_replace_all(activity, c("%3D" = '":"', "%3B" = '","', "%20" = ' ', "%2C" = ",", "%3" = ':')), '","Weekday":"', day_name, '"}')
+    }
+    response <- create_chat_completion(
+      model = "gpt-4o-mini",
+      messages = list(
+        list(
+          "role" = "system",
+          "content" = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity. If the distance is around 8-9km it is probably the user's commute to work. Ideally the title will be unique from day to day. The route is almost the exact same every day. You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
+        ),
+        list(
+          "role" = "user",
+          "content" = activity
+        )
+      )
+    )
+    name <- response$choices$message.content
+    
+    
   }
+  
+
   
   if (str_detect(id, "http")) {
     id <- str_extract(id, "activities(%2F|/)[0-9]+") |> str_remove("activities%2F|activities/")
