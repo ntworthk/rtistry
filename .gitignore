@@ -10,4 +10,4 @@ hash_*
 credentials.R
 strava_creds.R
 .httr-strava-oauth
-previous_strata.txt
+previous_strava.txt
