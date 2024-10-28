@@ -861,6 +861,14 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
   
   source("strava_creds.R")
   
+  if (file.exists("previous_strava.txt")) {
+    
+    previous_names <- read_lines("previous_strava.txt")
+    
+  } else {
+    previous_names <- c("Morning Glide to the Office Odyssey", "Saturday Sprocket Sprint: A Short Sojourn to Adventure", "Whimsical Wheels Wednesday: Commute Carousel!", "Pedal Power Parade to the Office", "Whirlwind Commute: The Race from the Office", "Pedal Power: Commute Chronicles Edition 22", "Monday Magic: The Daily Ascent to Adventure", "Mystical Morning Commute: The 8.4km Odyssey")
+  }
+  
   if (key != strava_creds) {
     return(list("status" = "error - not authorised"))
   }
@@ -896,7 +904,11 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
       messages = list(
         list(
           "role" = "system",
-          "content" = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity. If the distance is around 8-9km it is probably the user's commute to work. Ideally the title will be unique from day to day. The route is almost the exact same every day. You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
+          "content" = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity. If the distance is around 8-9km it is probably the user's commute to work. Ideally the title will be unique from day to day and vary in terms of sentence construction. The route is almost the exact same every day. You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
+        ),
+        list(
+          "role" = "system",
+          "content" = paste0("Here are some recent previous titles (so as not to repeat them): ", paste0(previous_names, collapse = ";"))
         ),
         list(
           "role" = "user",
@@ -905,6 +917,14 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
       )
     )
     name <- response$choices$message.content
+    
+    if (length(previous_names) >= 15) {
+      previous_names <- c(previous_names[1:14], name)
+    } else {
+      previous_names <- c(previous_names, name)
+    }
+    
+    write_lines(previous_names, "previous_strava.txt")
     
     
   }
