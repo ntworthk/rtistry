@@ -641,7 +641,7 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
   )
   
   res <- httr::GET(
-    url = paste0("https://digitalapi.auspost.com.au/shipmentsgatewayapi/watchlist/shipments/", parcel_id),
+    url = paste0("https://digitalapi.auspost.com.au/shipments-gateway/v1/watchlist/shipments/", parcel_id),
     httr::add_headers(.headers=headers),
     httr::set_cookies(.cookies = cookies)
   )
