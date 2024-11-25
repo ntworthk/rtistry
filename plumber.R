@@ -27,6 +27,7 @@ library(purrr)
 library(lubridate)
 library(glue)
 library(openai)
+library(knitr)
 
 source("helpers.R")
 
@@ -1031,3 +1032,81 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
   
   
 }
+
+
+#* Update Strava activity songs
+#* @param id The activity ID
+#* @param key Authentication key
+#* @get /strava_song
+#* @serializer json
+#* @tag data
+update_strava_songs <- function(id, key) {
+  
+  source("strava_creds.R")
+  authorization <- get_spotify_authorization_code()
+  
+  
+  base_url <- glue("https://api.spotify.com/v1/playlists/{playlist_id}")
+  res <- RETRY("GET", base_url, config(token = authorization), 
+               encode = "json")
+  stop_for_status(res)
+  
+  playlist <- content(res)
+  
+  songs <- map_dfr(playlist$tracks$items, function(y) {
+    
+    track_details <- y$track[c("artists", "name")]
+    
+    artists <- map(track_details$artists, \(z) z$name)
+    track_name <- track_details$name
+    
+    artists <- combine_words(artists, oxford_comma = FALSE)
+    
+    tibble(
+      artist = artists,
+      name = track_name
+    )
+    
+  }) |> 
+    mutate(artist = as.character(artist)) |> 
+    mutate(artist = case_match(
+      artist,
+      "boygenius, Julien Baker, Phoebe Bridgers and Lucy Dacus" ~ "boygenuis",
+      "Racing and Peter Urlich" ~ "Racing",
+      .default = artist
+    ))
+  
+  current_strava_song_index <- read_lines("strava_song_index.txt") |> 
+    as.numeric()
+  current_strava_song_index <- current_strava_song_index + 1
+
+  new_title <- songs |> 
+    mutate(title = glue("🎵 Today's tune: {artist} - {name} 🎵")) |> 
+    filter(row_number() == current_strava_song_index) |> 
+    pull(title)
+  
+  if (key != strava_creds) {
+    return(list("status" = "error - not authorised"))
+  }
+  
+  write_lines(current_strava_song_index, "strava_song_index.txt")
+  
+  if (str_detect(id, "http")) {
+    id <- str_extract(id, "activities(%2F|/)[0-9]+") |> str_remove("activities%2F|activities/")
+  }
+  
+  source("refresh_strava.R")
+  
+  body <- list(name = new_title)
+  
+  res <- PUT(
+    paste0("https://www.strava.com/api/v3/activities/", id),
+    stoken,
+    body = body
+  )
+  
+  http_status(res)
+  
+  
+}
+
