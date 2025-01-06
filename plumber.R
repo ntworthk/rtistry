@@ -439,7 +439,7 @@ function(sport = "running"){
 #* Exercise - distance to go to goal
 #* @serializer json
 #* @param time_period Distance to go for the rest of the "year", or "day", or "week" averages. Default "year".
-#* @param per_day Deprecated. Use time_period = "daily"
+#* @param per_day Deprecated. Use time_period = "day"
 #* @get /exercise/distance
 #* @tag exercise
 function(time_period = "year", per_day = FALSE){
@@ -458,7 +458,7 @@ function(time_period = "year", per_day = FALSE){
       cur_date <- as.Date(Sys.time() + 11 * 60 * 60)
     }
     
-    as.numeric(as.Date("2025-01-01") - cur_date, unit = "days")
+    as.numeric(as.Date("2026-01-01") - cur_date, unit = "days")
   }
   
   days_to_go <- case_when(
