@@ -103,3 +103,9 @@ get_formatted_data <- function(stop_id, limit = 5, route = NULL) {
     format_stop_data(route = route, limit = limit)
   
 }
+
+#--- UN days -------------------------------------------------------------------
+
+un_days <- read_delim("days.csv", delim = ";", col_types = "cc") |> 
+  mutate(date = dmy(date)) |> 
+  mutate(title = str_remove_all(title, " \\(.*\\)"))

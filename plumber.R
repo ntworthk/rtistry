@@ -1110,3 +1110,19 @@ update_strava_songs <- function(id, key) {
   
 }
 
+#* Get UN International Days
+#* @param date Optional, Date to check
+#* @get /days
+#* @serializer json
+#* @tag data
+get_days <- function(date = Sys.Date(), limit = 1) {
+  
+  test_date <- date
+  
+  un_days |> 
+    filter(date >= test_date) |> 
+    head(limit) |> 
+    mutate(date_format = format(date, "%d %b")) |> 
+    as.list()
+
+}
