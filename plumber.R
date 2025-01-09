@@ -1122,7 +1122,7 @@ get_days <- function(date = Sys.Date(), limit = 1) {
   un_days |> 
     filter(date >= test_date) |> 
     head(limit) |> 
-    mutate(date_format = format(date, "%d %b")) |> 
+    mutate(date_format = format(date, "%d %b"), pretty = paste0(date_format, "\n", title)) |>
     as.list()
 
 }
