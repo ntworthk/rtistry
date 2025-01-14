@@ -28,6 +28,7 @@ library(lubridate)
 library(glue)
 library(openai)
 library(knitr)
+library(DBI)
 
 source("helpers.R")
 
