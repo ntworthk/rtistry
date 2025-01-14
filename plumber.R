@@ -1146,7 +1146,7 @@ get_days <- function(date = Sys.Date(), limit = 1) {
 #* Submit picks to the database
 #* @param pick_base64 The base64 encoded pick data
 #* @post /submit_pick
-#* @serializer json
+#* @serializer unboxedJSON
 #* @tag antitrusties
 submit_picks <- function(pick_base64) {
   tryCatch({
@@ -1234,7 +1234,7 @@ submit_picks <- function(pick_base64) {
 
 #* Get most recent picks for each person
 #* @get /latest_picks
-#* @serializer json
+#* @serializer unboxedJSON
 #* @tag antitrusties
 get_picks <- function() {
   tryCatch({
