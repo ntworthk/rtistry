@@ -1127,3 +1127,129 @@ get_days <- function(date = Sys.Date(), limit = 1) {
     as.list()
 
 }
+
+#* Submit picks to the database
+#* @param pick_base64 The base64 encoded pick data
+#* @post /submit_pick
+#* @serializer json
+#* @tag antitrusties
+submit_picks <- function(pick_base64) {
+  tryCatch({
+    # Validate input exists
+    if (is.null(pick_base64) || pick_base64 == "") {
+      return(list(
+        status = "error",
+        message = "Missing pick_base64 parameter"
+      ))
+    }
+    
+    # Try to decode base64
+    decoded_raw <- tryCatch({
+      base64_dec(pick_base64)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(decoded_raw)) {
+      return(list(
+        status = "error",
+        message = "Invalid base64 encoding"
+      ))
+    }
+    
+    # Try to convert to JSON
+    picks <- tryCatch({
+      rawToChar(decoded_raw) |> 
+        fromJSON()
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(picks) || !all(c("picks", "name", "timestamp") %in% names(picks))) {
+      return(list(
+        status = "error",
+        message = "Invalid JSON structure"
+      ))
+    }
+    
+    # Database operations in another tryCatch block
+    tryCatch({
+      con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+      on.exit(dbDisconnect(con))
+      
+      if (!dbExistsTable(conn = con, name = "picks")) {
+        template_table <- tibble(
+          id = character(),
+          text = character(),
+          points = integer(),
+          name = character(),
+          timestamp = character()
+        )
+        
+        dbCreateTable(conn = con, name = "picks", template_table)
+      }
+      
+      rows_added <- as_tibble(picks$picks) |> 
+        mutate(
+          name = picks$name,
+          timestamp = picks$timestamp
+        ) |> 
+        dbAppendTable(conn = con, name = "picks", value = _)
+      
+      return(list(
+        status = "success",
+        rows_added = rows_added,
+        message = "Picks successfully submitted"
+      ))
+      
+    }, error = function(e) {
+      return(list(
+        status = "error",
+        message = paste("Database error:", e$message)
+      ))
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Unexpected error:", e$message)
+    ))
+  })
+}
+
+#* Get most recent picks for each person
+#* @get /latest_picks
+#* @serializer json
+#* @tag antitrusties
+get_picks <- function() {
+  tryCatch({
+    con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "picks")) {
+      return(list(
+        status = "error",
+        message = "No picks table exists"
+      ))
+    }
+    
+    picks_sql <- tbl(con, "picks")
+    
+    picks <- picks_sql |> 
+      group_by(name) |> 
+      filter(timestamp == max(timestamp, na.rm = TRUE)) |> 
+      ungroup() |>
+      collect()
+    
+    return(list(
+      status = "success",
+      picks = picks
+    ))
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+}
