@@ -1331,11 +1331,11 @@ submit_predictions <- function(prediction_base64) {
         dbCreateTable(conn = con, name = "predictions", template_table)
       }
       
-      rows_added <- as_tibble(text = predictions) |> 
+      rows_added <- tibble(text = predictions) |> 
         mutate(
           id = UUIDgenerate(n = n()),
           status = "pending",
-          notes = character(),
+          notes = NA_character_,
           timestamp = Sys.time()
         ) |> 
         dbAppendTable(conn = con, name = "predictions", value = _)
