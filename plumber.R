@@ -29,6 +29,7 @@ library(glue)
 library(openai)
 library(knitr)
 library(DBI)
+library(uuid)
 
 source("helpers.R")
 
@@ -1259,6 +1260,130 @@ get_picks <- function() {
     return(list(
       status = "success",
       picks = picks
+    ))
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+}
+
+#* Submit predictions to the database
+#* @param pick_base64 The base64 encoded prediction data
+#* @post /submit_prediction
+#* @serializer unboxedJSON
+#* @tag antitrusties
+submit_predictions <- function(prediction_base64) {
+  tryCatch({
+    # Validate input exists
+    if (is.null(prediction_base64) || prediction_base64 == "") {
+      return(list(
+        status = "error",
+        message = "Missing prediction_base64 parameter"
+      ))
+    }
+    
+    # Try to decode base64
+    decoded_raw <- tryCatch({
+      base64_dec(prediction_base64)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(decoded_raw)) {
+      return(list(
+        status = "error",
+        message = "Invalid base64 encoding"
+      ))
+    }
+    
+    # Try to convert to JSON
+    predictions <- tryCatch({
+      rawToChar(decoded_raw) |> 
+        fromJSON()
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(predictions)) {
+      return(list(
+        status = "error",
+        message = "Invalid JSON structure"
+      ))
+    }
+    
+    # Database operations in another tryCatch block
+    tryCatch({
+      con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+      on.exit(dbDisconnect(con))
+      
+      if (!dbExistsTable(conn = con, name = "predictions")) {
+        template_table <- tibble(
+          id = character(),
+          text = character(),
+          status = integer(),
+          notes = character(),
+          timestamp = POSIXct()
+        )
+        
+        dbCreateTable(conn = con, name = "predictions", template_table)
+      }
+      
+      rows_added <- as_tibble(text = predictions) |> 
+        mutate(
+          id = UUIDgenerate(n = n()),
+          status = "pending",
+          notes = character(),
+          timestamp = Sys.time()
+        ) |> 
+        dbAppendTable(conn = con, name = "predictions", value = _)
+      
+      return(list(
+        status = "success",
+        rows_added = rows_added,
+        message = "Predictions successfully submitted"
+      ))
+      
+    }, error = function(e) {
+      return(list(
+        status = "error",
+        message = paste("Database error:", e$message)
+      ))
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Unexpected error:", e$message)
+    ))
+  })
+}
+
+#* Get all predictions
+#* @get /predictions
+#* @serializer unboxedJSON
+#* @tag antitrusties
+get_predictions <- function() {
+  tryCatch({
+    con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "predictions")) {
+      return(list(
+        status = "error",
+        message = "No predictions table exists"
+      ))
+    }
+    
+    predictions_sql <- tbl(con, "predictions")
+    
+    predictions <- collect(predictions_sql)
+    
+    return(list(
+      status = "success",
+      predictions = predictions
     ))
     
   }, error = function(e) {
