@@ -1198,6 +1198,7 @@ submit_picks <- function(pick_base64) {
           id = character(),
           text = character(),
           points = integer(),
+          risky = logical(),
           name = character(),
           timestamp = character()
         )
