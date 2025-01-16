@@ -1406,11 +1406,11 @@ get_predictions <- function() {
 update_prediction_status <- function(id, status, auth_code, notes = "") {
   tryCatch({
     # Validate auth code
-    expected_code <- Sys.getenv("ANTITRUSTIES_AUTH_CODE")
+    source("antitrusties_creds.R")
     if (is.null(auth_code) || auth_code != expected_code) {
       return(list(
         status = "error",
-        message = paste0("Invalid authentication code, your code was ", auth_code, ", expected ", expected_code)
+        message = "Invalid authentication code"
       ))
     }
     
