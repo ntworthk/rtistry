@@ -1511,8 +1511,11 @@ update_predictions_batch <- function(updates, auth_code) {
     tryCatch({
       total_affected <- 0
       
-      for (update in updates) {
-        if (!update$status %in% c("pending", "correct", "incorrect")) {
+      for (i in 1:nrow(updates)) {
+        
+        update <- updates[i, ]
+        
+        if (!is.null(update$status) && !update$status %in% c("pending", "correct", "incorrect")) {
           dbRollback(con)
           return(list(
             status = "error",
