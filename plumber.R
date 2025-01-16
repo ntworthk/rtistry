@@ -1520,13 +1520,21 @@ update_predictions_batch <- function(updates, auth_code) {
           ))
         }
         
+        # Get current values
+        current_values <- dbGetQuery(
+          con,
+          "SELECT status, notes, text FROM predictions WHERE id = $1",
+          params = list(update$id)
+        )
+        
+        # Use provided values or fall back to current values
         update_query <- dbSendQuery(
           conn = con,
           "UPDATE predictions SET status = $1, notes = $2, text = $3 WHERE id = $4",
           params = list(
-            update$status %||% dbGetQuery(con, "SELECT status FROM predictions WHERE id = $1", params = list(update$id))$status,
-            update$notes %||% dbGetQuery(con, "SELECT notes FROM predictions WHERE id = $1", params = list(update$id))$notes,
-            update$text %||% dbGetQuery(con, "SELECT text FROM predictions WHERE id = $1", params = list(update$id))$text,
+            update$status %||% current_values$status,
+            update$notes %||% current_values$notes,
+            update$text %||% current_values$text,
             update$id
           )
         )
