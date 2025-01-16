@@ -1410,7 +1410,7 @@ update_prediction_status <- function(id, status, auth_code, notes = "") {
     if (is.null(auth_code) || auth_code != expected_code) {
       return(list(
         status = "error",
-        message = "Invalid authentication code"
+        message = paste0("Invalid authentication code, your code was ", auth_code, ", expected ", expected_code)
       ))
     }
     
