@@ -1394,3 +1394,77 @@ get_predictions <- function() {
     ))
   })
 }
+
+#* Update the status of a prediction
+#* @param id The ID of the prediction to update
+#* @param status The new status (pending, correct, or incorrect)
+#* @param notes Optional notes about the status update
+#* @param auth_code Authentication code for validation
+#* @post /update_prediction_status
+#* @serializer unboxedJSON
+#* @tag antitrusties
+update_prediction_status <- function(id, status, auth_code, notes = "") {
+  tryCatch({
+    # Validate auth code
+    expected_code <- Sys.getenv("ANTITRUSTIES_AUTH_CODE")
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Invalid authentication code"
+      ))
+    }
+    
+    # Validate inputs
+    if (is.null(id) || id == "") {
+      return(list(
+        status = "error",
+        message = "Missing prediction ID"
+      ))
+    }
+    
+    if (is.null(status) || !status %in% c("pending", "correct", "incorrect")) {
+      return(list(
+        status = "error",
+        message = "Invalid status value - must be 'pending', 'correct', or 'incorrect'"
+      ))
+    }
+    
+    # Database operations
+    con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "predictions")) {
+      return(list(
+        status = "error",
+        message = "No predictions table exists"
+      ))
+    }
+    
+    # Update the prediction status
+    update_query <- dbSendQuery(
+      conn = con,
+      "UPDATE predictions SET status = $1, notes = $2 WHERE id = $3",
+      params = list(status, notes, id)
+    )
+    rows_affected <- dbGetRowsAffected(update_query)
+    dbClearResult(update_query)
+    
+    if (rows_affected == 0) {
+      return(list(
+        status = "error",
+        message = "No prediction found with the specified ID"
+      ))
+    }
+    
+    return(list(
+      status = "success",
+      message = "Prediction status updated successfully"
+    ))
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+}
