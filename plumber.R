@@ -1468,3 +1468,88 @@ update_prediction_status <- function(id, status, auth_code, notes = "") {
     ))
   })
 }
+
+#* Update multiple predictions in a batch
+#* @param updates List of prediction updates
+#* @param auth_code Authentication code for validation
+#* @post /update_predictions_batch
+#* @serializer unboxedJSON
+#* @tag antitrusties
+update_predictions_batch <- function(updates, auth_code) {
+  tryCatch({
+    # Validate auth code
+    source("antitrusties_creds.R")
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Invalid authentication code"
+      ))
+    }
+    
+    # Validate input structure
+    if (!is.list(updates) || length(updates) == 0) {
+      return(list(
+        status = "error",
+        message = "Invalid updates format"
+      ))
+    }
+    
+    # Database operations
+    con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "predictions")) {
+      return(list(
+        status = "error",
+        message = "No predictions table exists"
+      ))
+    }
+    
+    # Start transaction
+    dbBegin(con)
+    
+    tryCatch({
+      total_affected <- 0
+      
+      for (update in updates) {
+        if (!update$status %in% c("pending", "correct", "incorrect")) {
+          dbRollback(con)
+          return(list(
+            status = "error",
+            message = paste("Invalid status value for prediction", update$id)
+          ))
+        }
+        
+        update_query <- dbSendQuery(
+          conn = con,
+          "UPDATE predictions SET status = $1, notes = $2, text = $3 WHERE id = $4",
+          params = list(
+            update$status %||% dbGetQuery(con, "SELECT status FROM predictions WHERE id = $1", params = list(update$id))$status,
+            update$notes %||% dbGetQuery(con, "SELECT notes FROM predictions WHERE id = $1", params = list(update$id))$notes,
+            update$text %||% dbGetQuery(con, "SELECT text FROM predictions WHERE id = $1", params = list(update$id))$text,
+            update$id
+          )
+        )
+        total_affected <- total_affected + dbGetRowsAffected(update_query)
+        dbClearResult(update_query)
+      }
+      
+      dbCommit(con)
+      
+      return(list(
+        status = "success",
+        message = sprintf("%d predictions updated successfully", total_affected)
+      ))
+      
+    }, error = function(e) {
+      dbRollback(con)
+      stop(e)
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+}
