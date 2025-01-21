@@ -1587,13 +1587,18 @@ get_number_of_people <- function() {
       group_by(name) |> 
       filter(timestamp == max(timestamp, na.rm = TRUE)) |> 
       ungroup() |>
-      distinct(name) |> 
+      distinct(name, timestamp) |> 
       collect()
+    
+    recent_picker <- picks |> 
+      filter(timestamp == max(timestamp)) |> 
+      pull(name)
     
     return(list(
       status = "success",
       n = nrow(picks),
-      people = picks$name
+      people = picks$name,
+      recent = recent_picker
     ))
     
   }, error = function(e) {
