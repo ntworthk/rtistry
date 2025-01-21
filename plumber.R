@@ -1598,7 +1598,7 @@ get_number_of_people <- function() {
     
     pickers <- picks$name
     
-    query <- paste0("n: ", n_pickers, "\nRecent: ", recent_picker)
+    query <- paste0("n: ", n_pickers, "\nRecent:\n", recent_picker)
     
     return(list(
       status = "success",
