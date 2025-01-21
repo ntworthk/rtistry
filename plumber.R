@@ -1569,7 +1569,7 @@ update_predictions_batch <- function(updates, auth_code) {
 #* @get /pickers
 #* @serializer unboxedJSON
 #* @tag antitrusties
-get_number_of_people <- function(auth_code) {
+get_number_of_people <- function(auth_code = NULL) {
   tryCatch({
     
     source("antitrusties_creds.R")
