@@ -1105,8 +1105,6 @@ update_strava_songs <- function(id, key) {
     return(list("status" = "error - not authorised"))
   }
   
-  write_lines(current_strava_song_index, "strava_song_index.txt")
-  
   if (str_detect(id, "http")) {
     id <- str_extract(id, "activities(%2F|/)[0-9]+") |> str_remove("activities%2F|activities/")
   }
@@ -1121,7 +1119,12 @@ update_strava_songs <- function(id, key) {
     body = body
   )
   
-  http_status(res)
+  stat <- http_status(res)
+  
+  if (stat == 200) {
+    write_lines(current_strava_song_index, "strava_song_index.txt")
+  }
+  stat
   
   
 }
