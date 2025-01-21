@@ -1594,11 +1594,18 @@ get_number_of_people <- function() {
       filter(timestamp == max(timestamp)) |> 
       pull(name)
     
+    n_pickers <- nrow(picks)
+    
+    pickers <- picks$name
+    
+    query <- paste0("n: ", n_pickers, "\nRecent: ", recent_picker)
+    
     return(list(
       status = "success",
-      n = nrow(picks),
-      people = picks$name,
-      recent = recent_picker
+      n = n_pickers,
+      people = pickers,
+      recent = recent_picker,
+      query = query
     ))
     
   }, error = function(e) {
