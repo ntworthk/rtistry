@@ -1625,11 +1625,7 @@ get_number_of_people <- function(auth_code = NULL) {
   })
 }
 
-#' @title Find Cheapest Fuel Station
-#' @name Fuel Station Optimizer
-#' 
-#' @description Returns directions to the most cost-effective fuel station by querying NSW
-#' FuelCheck API and calculating total cost including travel expenses.
+#' Returns directions to the most cost-effective fuel station by querying NSW FuelCheck API and calculating total cost including travel expenses.
 #'
 #' @tag random
 #' @get /fuel_me_up
@@ -1644,19 +1640,71 @@ get_number_of_people <- function(auth_code = NULL) {
 #'
 #' @response 200 Returns Google Maps URL to optimal fuel station
 #' @serializer text
-#'
-#' @examples
-#' # Using curl
-#' curl -X GET "http://localhost:8000/fuel_me_up?fuel_type=E10&suburb=SURRY%20HILLS&postcode=2010"
-#'
-#' # Using httr in R
-#' GET("http://localhost:8000/fuel_me_up", 
-#'     query = list(
-#'         fuel_type = "E10",
-#'         suburb = "SURRY HILLS",
-#'         postcode = "2010"
-#'     ))
 fuel_up_cheaply <- function(fuel_type = "U91", suburb = "SUMMER HILL", postcode = "2130", economy_l_per_100km = 6.5, fuel_tank_l = 55, fill_proportion = 0.75, method = "overall") {
+  
+  tryCatch(
+    {
+      economy_l_per_100km <- as.numeric(economy_l_per_100km)
+      if (is.na(economy_l_per_100km)) {
+        stop("Could not convert economy value to number")
+      }
+      if (economy_l_per_100km <= 0) {
+        stop("Economy must be greater than 0 L/100km")
+      }
+      if (economy_l_per_100km > 100) {
+        stop("Economy value unreasonably high (>100 L/100km)")
+      }
+      economy_l_per_100km
+    },
+    error = function(e) {
+      list(
+        error = TRUE,
+        message = sprintf("Invalid economy value '%s': %s", economy_l_per_100km, e$message)
+      )
+    }
+  )
+  
+  tryCatch(
+    {
+      fuel_tank_l <- as.numeric(fuel_tank_l)
+      if (is.na(fuel_tank_l)) {
+        stop("Could not convert fuel tank capacity to number")
+      }
+      if (fuel_tank_l <= 0) {
+        stop("Fuel tank capacity must be greater than 0 L")
+      }
+      if (fuel_tank_l > 1000) {
+        stop("Fuel tank capacity unreasonably high (>1000 L)")
+      }
+      fuel_tank_l
+    },
+    error = function(e) {
+      list(
+        error = TRUE,
+        message = sprintf("Invalid fuel tank capacity '%s': %s", fuel_tank_l, e$message)
+      )
+    }
+  )
+  
+  tryCatch(
+    {
+      fill_proportion <- as.numeric(fill_proportion)
+      if (is.na(fill_proportion)) {
+        stop("Could not convert fill proportion to number")
+      }
+      if (fill_proportion <= 0 || fill_proportion > 1) {
+        stop("Fill proportion must be between 0 and 1")
+      }
+      fill_proportion
+    },
+    error = function(e) {
+      list(
+        error = TRUE,
+        message = sprintf("Invalid fill proportion '%s': %s", fill_proportion, e$message)
+      )
+    }
+  )
+  
   
   # Set up HTTP request
   params <- list(
