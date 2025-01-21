@@ -1564,3 +1564,42 @@ update_predictions_batch <- function(updates, auth_code) {
     ))
   })
 }
+
+#* Get people who have submitted picks
+#* @get /pickers
+#* @serializer unboxedJSON
+#* @tag antitrusties
+get_number_of_people <- function() {
+  tryCatch({
+    con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "picks")) {
+      return(list(
+        status = "error",
+        message = "No picks table exists"
+      ))
+    }
+    
+    picks_sql <- tbl(con, "picks")
+    
+    picks <- picks_sql |> 
+      group_by(name) |> 
+      filter(timestamp == max(timestamp, na.rm = TRUE)) |> 
+      ungroup() |>
+      distinct(name) |> 
+      collect()
+    
+    return(list(
+      status = "success",
+      n = nrow(picks),
+      people = picks$name
+    ))
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+}
