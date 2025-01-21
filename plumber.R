@@ -1624,3 +1624,74 @@ get_number_of_people <- function(auth_code = NULL) {
     ))
   })
 }
+
+#' @title Find Cheapest Fuel Station
+#' @name Fuel Station Optimizer
+#' 
+#' @description Returns directions to the most cost-effective fuel station by querying NSW
+#' FuelCheck API and calculating total cost including travel expenses.
+#'
+#' @tag random
+#' @get /fuel_me_up
+#'
+#' @param fuel_type:string The type of fuel to search for (e.g., "U91", "E10", "P95"). Defaults to "U91"
+#' @param suburb:string The suburb to search from. Defaults to "SUMMER HILL"
+#' @param postcode:string The postcode of the starting location. Defaults to "2130"
+#' @param economy_l_per_100km:numeric Vehicle's fuel consumption in L/100km. Defaults to 6.5
+#' @param fuel_tank_l:numeric Fuel tank capacity in litres. Defaults to 55
+#' @param fill_proportion:numeric Proportion of tank to fill (0-1). Defaults to 0.75
+#' @param method:string Optimization method. Defaults to "overall"
+#'
+#' @response 200 Returns Google Maps URL to optimal fuel station
+#' @serializer text
+#'
+#' @examples
+#' # Using curl
+#' curl -X GET "http://localhost:8000/fuel_me_up?fuel_type=E10&suburb=SURRY%20HILLS&postcode=2010"
+#'
+#' # Using httr in R
+#' GET("http://localhost:8000/fuel_me_up", 
+#'     query = list(
+#'         fuel_type = "E10",
+#'         suburb = "SURRY HILLS",
+#'         postcode = "2010"
+#'     ))
+fuel_up_cheaply <- function(fuel_type = "U91", suburb = "SUMMER HILL", postcode = "2130", economy_l_per_100km = 6.5, fuel_tank_l = 55, fill_proportion = 0.75, method = "overall") {
+  
+  # Set up HTTP request
+  params <- list(
+    bottomLeftLatitude = "-33.95151770158254",
+    bottomLeftLongitude = "150.97390719982909",
+    topRightLatitude = "-33.835386765624314",
+    topRightLongitude = "151.30057880017088",
+    fuelType = fuel_type,
+    brands = "SelectAll|7-Eleven|ASTRON|Ampol|BP|Budget|Caltex|Caltex Woolworths|ChargePoint|Chargefox|Coles Express|Costco|EG Ampol|EVUp|Enhance|Everty|Evie Networks|Independent|Independent EV|Inland Petroleum|JOLT|Liberty|Lowes|Metro Fuel|Mobil|NRMA|Pearl Energy|Reddy Express|Shell|South West|Speedway|Tesla|Transwest Fuels|U-Go|Ultra Petroleum|United|Westside|Woodham Petroleum",
+    suburb = suburb,
+    postcode = postcode
+  )
+  
+  # Make request
+  res <- GET(url = "https://www.fuelcheck.nsw.gov.au/fuel/api/v1/fuel/prices/bylocation", query = params)
+  
+  prices <- content(res)
+  
+  # Extract relevant fields
+  df <- do.call(rbind, lapply(prices, function(price) {
+    as.data.frame(price[c("Name", "Lat", "Long", "Distance", "Price")])
+  }))
+  
+  # Calculate relative cost
+  df$cost_dollars <- df$Price / 100 * fuel_tank_l * fill_proportion + df$Price / 100 * df$Distance / 100 * economy_l_per_100km * df$Price / 100
+  df$time_minutes <- df$Distance / 40 * 60
+  
+  if (method == "overall" || method == "cost") {
+    df <- df[order(df$cost_dollars), ]
+  } else if (method == "time") {
+    df <- df[order(df$time_minutes), ]
+  }
+  
+  # Return URL with directions
+  paste0("https://www.google.com/maps/dir/?api=1&destination=", df$Lat[1], "%2C", df$Long[1])
+  
+  
+}
