@@ -1569,8 +1569,17 @@ update_predictions_batch <- function(updates, auth_code) {
 #* @get /pickers
 #* @serializer unboxedJSON
 #* @tag antitrusties
-get_number_of_people <- function() {
+get_number_of_people <- function(auth_code) {
   tryCatch({
+    
+    source("antitrusties_creds.R")
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Invalid authentication code"
+      ))
+    }
+    
     con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
     on.exit(dbDisconnect(con))
     
