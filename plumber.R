@@ -1668,7 +1668,7 @@ get_unpicked <- function() {
     
     return(list(
       status = "success",
-      predictions = unpicked
+      picks = unpicked
     ))
   }, error = function(e) {
     return(list(
