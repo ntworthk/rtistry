@@ -1628,6 +1628,58 @@ get_number_of_people <- function(auth_code = NULL) {
   })
 }
 
+#* Get predictions that nobody picked
+#* @get /unpicked
+#* @serializer unboxedJSON
+#* @tag antitrusties
+get_unpicked <- function() {
+  
+  tryCatch({
+    con <- dbConnect(RSQLite::SQLite(), "antitrusties.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "picks")) {
+      return(list(
+        status = "error",
+        message = "No picks table exists"
+      ))
+    }
+    
+    picks_sql <- tbl(con, "picks")
+    
+    picks <- picks_sql |> 
+      group_by(name) |> 
+      filter(timestamp == max(timestamp, na.rm = TRUE)) |> 
+      ungroup() |>
+      collect()
+    
+    if (!dbExistsTable(conn = con, name = "predictions")) {
+      return(list(
+        status = "error",
+        message = "No predictions table exists"
+      ))
+    }
+    
+    predictions_sql <- tbl(con, "predictions")
+    
+    predictions <- collect(predictions_sql)
+    
+    unpicked <- predictions |> anti_join(picks, by = "id")
+    
+    return(list(
+      status = "success",
+      predictions = unpicked
+    ))
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+  
+  
+}
+
 #' Returns directions to the most cost-effective fuel station by querying NSW FuelCheck API and calculating total cost including travel expenses.
 #'
 #' @tag random
