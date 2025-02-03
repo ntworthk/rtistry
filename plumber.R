@@ -1119,7 +1119,7 @@ update_strava_songs <- function(id, key) {
     body = body
   )
   
-  stat <- http_status(res)
+  stat <- status_code(res)
   
   if (stat == 200) {
     write_lines(current_strava_song_index, "strava_song_index.txt")
