@@ -877,6 +877,12 @@ function(since = 2014, until = NULL){
   
   st_year <- max(decisions_by_year$year)
   
+if (st == "No mergers opposed") {
+  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
+} else {
+  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**...but no mergers opposed**</span> in ", st_year)
+}
+
   st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
   
   g <- decisions_by_year %>% 
@@ -907,7 +913,7 @@ function(since = 2014, until = NULL){
     scale_fill_manual(values = outcome_colours, aesthetics = c("colour", "fill"), guide = guide_none()) +
     coord_cartesian(clip = "off") +
     labs(x = NULL, y = "Informal merger reviews", fill = NULL,
-         title = "Historic number of ACCC informal merger oppositions",
+         title = "Highest number of public mergers reviewed since 2014...",
          subtitle = st,
          caption = "Year of decision based on 'date completed' for concluded reviews and 'date commenced' for ongoing reviews.\nSource: HoustonKemp analysis of ACCC website. Chart by Nick Twort") +
     theme_minimal(base_family = "Aptos", base_size = 12) +
