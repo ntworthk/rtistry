@@ -872,18 +872,18 @@ function(since = 2014, until = NULL){
     filter(year == max(year), outcome == "Opposed") %>%
     pull(n)
   
-  st <- ifelse(length(st) == 0, "No", st) |> 
+  zero_opposed <- length(st) == 0
+
+  st <- ifelse(zero_opposed, "No", st) |> 
     paste0(" mergers opposed")
   
   st_year <- max(decisions_by_year$year)
   
-if (st == "No mergers opposed") {
-  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
-} else {
+if (zero_opposed) {
   st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**...but no mergers opposed**</span> in ", st_year)
-}
-
+} else {
   st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
+}
   
   g <- decisions_by_year %>% 
     ggplot(aes(x = year, y = n, fill = outcome)) +
