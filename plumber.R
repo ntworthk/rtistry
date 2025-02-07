@@ -702,9 +702,10 @@ function(parcel_id = "MZ8500709501000964506", wrap = 10) {
 #* Get ACCC chart
 #* @serializer png list(width = 15, height = 15, units = "cm", res = 200)
 #* @param since Plot decisions starting from this year.
+#* @param until Plot decisions ending in this year
 #* @get /accc
 #* @tag data
-function(since = 2014){
+function(since = 2014, until = NULL){
   
   url <- "https://www.accc.gov.au/public-registers/browse-public-registers?f%5B0%5D=type%3Aacccgov_informal_merger_review"
   
@@ -871,8 +872,12 @@ function(since = 2014){
   
   st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
   
+  if (is.null(until)) {
+     until <- year(Sys.Date())
+  }
+
   g <- decisions_by_year %>% 
-    filter(year >= since) %>% 
+    filter(year >= since, year <= until) %>% 
     ggplot(aes(x = year, y = n, fill = outcome)) +
     geom_col(position = position_stack()) +
     geom_hline(yintercept = 0, linewidth = 1) +
