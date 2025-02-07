@@ -860,6 +860,13 @@ function(since = 2014, until = NULL){
     "Withdrawn" = "#ECAA2B",
     "Under consideration" = "#AA2E60"
   )
+
+  if (is.null(until)) {
+     until <- year(Sys.Date())
+  }
+
+  decisions_by_year <- decisions_by_year %>% 
+    filter(year >= since, year <= until)
   
   st <- decisions_by_year %>%
     filter(year == max(year), outcome == "Opposed") %>%
@@ -872,12 +879,7 @@ function(since = 2014, until = NULL){
   
   st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
   
-  if (is.null(until)) {
-     until <- year(Sys.Date())
-  }
-
   g <- decisions_by_year %>% 
-    filter(year >= since, year <= until) %>% 
     ggplot(aes(x = year, y = n, fill = outcome)) +
     geom_col(position = position_stack()) +
     geom_hline(yintercept = 0, linewidth = 1) +
