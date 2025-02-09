@@ -1013,11 +1013,15 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
       messages = list(
         list(
           "role" = "system",
-          "content" = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity. If the distance is around 8-9km it is probably the user's commute to work. Ideally the title will be unique from day to day and vary in terms of sentence construction. The route is almost the exact same every day. You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
+          "content" = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity.
+          If the distance is around 8-9km it is probably the user's commute to work.
+          If the time is in the MORNING it will be TO work and in the evening it is HOME FROM work.
+          The title MUST VARY AS MUCH AS POSSIBLE FROM DAY TO DAY IN TERMS OF SENTENCE CONSTRUCTION AND STYLE.
+          You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
         ),
         list(
           "role" = "system",
-          "content" = paste0("Here are some recent previous titles (so as not to repeat them): ", paste0(previous_names, collapse = ";"))
+          "content" = paste0("Here are some recent previous titles (so as not to repeat them and to vary the structure as much as possible): ", paste0(previous_names, collapse = ";"))
         ),
         list(
           "role" = "user",
