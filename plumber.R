@@ -966,7 +966,7 @@ get_departure_board <- function(stop_ids = 213052, route = NULL) {
 #* @get /strava
 #* @serializer json
 #* @tag data
-update_strava <- function(id, name = NULL, description = NULL, key, activity = NULL, use_gpt = TRUE) {
+update_strava <- function(id, name = NULL, description = NULL, key, activity = NULL, use_gpt = TRUE, make_private = TRUE) {
   
   source("strava_creds.R")
   
@@ -1048,7 +1048,8 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
   
   body <- list(
     name = name,
-    description = description
+    description = description,
+    private = make_private
   )
   
   res <- PUT(
