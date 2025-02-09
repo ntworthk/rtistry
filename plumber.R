@@ -1049,7 +1049,7 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
   body <- list(
     name = name,
     description = description,
-    private = make_private
+    hide_from_home = make_private
   )
   
   res <- PUT(
