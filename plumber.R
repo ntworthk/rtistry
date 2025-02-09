@@ -1017,6 +1017,7 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
           If the distance is around 8-9km it is probably the user's commute to work.
           If the time is in the MORNING it will be TO work and in the evening it is HOME FROM work.
           The title MUST VARY AS MUCH AS POSSIBLE FROM DAY TO DAY IN TERMS OF SENTENCE CONSTRUCTION AND STYLE.
+          For example, the title does NOT have to be in the form 'some words: some more words'.
           You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
         ),
         list(
