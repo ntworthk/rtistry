@@ -26,7 +26,7 @@ library(ggtext)
 library(purrr)
 library(lubridate)
 library(glue)
-library(openai)
+library(ellmer)
 library(knitr)
 library(DBI)
 library(uuid)
@@ -970,23 +970,6 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
   
   source("strava_creds.R")
   
-  if (file.exists("previous_strava.txt")) {
-    
-    previous_names <- read_lines("previous_strava.txt")
-    
-  } else {
-    previous_names <- c(
-      "Morning Glide to the Office Odyssey",
-      "Saturday Sprocket Sprint: A Short Sojourn to Adventure",
-      "Whimsical Wheels Wednesday: Commute Carousel!",
-      "Pedal Power Parade to the Office",
-      "Whirlwind Commute: The Race from the Office",
-      "Pedal Power: Commute Chronicles Edition 22",
-      "Monday Magic: The Daily Ascent to Adventure",
-      "Mystical Morning Commute: The 8.4km Odyssey"
-      )
-  }
-  
   if (key != strava_creds) {
     return(list("status" = "error - not authorised"))
   }
@@ -1017,38 +1000,18 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
     if (!is.null(activity)) {
       activity <- paste0('{"', str_replace_all(activity, c("%3D" = '":"', "%3B" = '","', "%20" = ' ', "%2C" = ",", "%3" = ':')), '","Weekday":"', day_name, '"}')
     }
-    response <- create_chat_completion(
+
+  chat <- chat_openai(
       model = "gpt-4o-mini",
-      messages = list(
-        list(
-          "role" = "system",
-          "content" = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity.
-          If the distance is around 8-9km it is probably the user's commute to work.
-          If the time is in the MORNING it will be TO work and in the evening it is HOME FROM work.
+      system_prompt = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity.
+          If the time is in the MORNING it is a COMMUTE TO work and in the evening it is HOME FROM work.
           The title MUST VARY AS MUCH AS POSSIBLE FROM DAY TO DAY IN TERMS OF SENTENCE CONSTRUCTION AND STYLE.
-          For example, the title MUST NOT be in the form 'some words: some more words'.
-          You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title."
-        ),
-        # list(
-        #   "role" = "system",
-        #   "content" = paste0("Here are some recent previous titles (so as not to repeat them and to vary the structure as much as possible): ", paste0(previous_names, collapse = ";"))
-        # ),
-        list(
-          "role" = "user",
-          "content" = activity
-        )
-      )
+          Do NOT structure the title with a colon in the middle.
+          You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title.",
+      echo = "none"
     )
-    name <- response$choices$message.content
-    
-    if (length(previous_names) >= 15) {
-      previous_names <- c(previous_names[1:14], name)
-    } else {
-      previous_names <- c(previous_names, name)
-    }
-    
-    write_lines(previous_names, "previous_strava.txt")
-    
+
+  name <- chat$chat(activity)
     
   }
   
