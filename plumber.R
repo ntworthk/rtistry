@@ -1902,8 +1902,8 @@ get_votes <- function() {
 
       bucketed_votes <- votes |>
         inner_join(buckets, join_by(between(vote, lb, ub, bounds = "[)"))) |>
-        arrange(lb) |>
-        count(bucket)
+        count(lb, bucket) |>
+        select(-lb)
 
       return(list(
         status = "success",
