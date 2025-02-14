@@ -1789,3 +1789,85 @@ fuel_up_cheaply <- function(fuel_type = "U91", suburb = "SUMMER HILL", postcode 
   
   
 }
+
+#* Submit vote on ACCC mergers to the database
+#* @param vote_base64 The base64 encoded vote data
+#* @post /submit_vote
+#* @serializer unboxedJSON
+#* @tag accc
+submit_vote <- function(vote_base64) {
+  tryCatch({
+    # Validate input exists
+    if (is.null(vote_base64) || vote_base64 == "") {
+      return(list(
+        status = "error",
+        message = "Missing vote_base64 parameter"
+      ))
+    }
+    
+    # Try to decode base64
+    decoded_raw <- tryCatch({
+      base64_dec(vote_base64)
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(decoded_raw)) {
+      return(list(
+        status = "error",
+        message = "Invalid base64 encoding"
+      ))
+    }
+    
+    # Try to convert to JSON
+    vote <- tryCatch({
+      rawToChar(decoded_raw) |> 
+        fromJSON()
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(vote) || !all(c("vote", "timestamp") %in% names(vote))) {
+      return(list(
+        status = "error",
+        message = "Invalid JSON structure"
+      ))
+    }
+    
+    # Database operations in another tryCatch block
+    tryCatch({
+      con <- dbConnect(RSQLite::SQLite(), "accc.sqlite")
+      on.exit(dbDisconnect(con))
+      
+      if (!dbExistsTable(conn = con, name = "votes")) {
+        template_table <- tibble(
+          vote = integer(),
+          timestamp = character()
+        )
+        
+        dbCreateTable(conn = con, name = "votes", template_table)
+      }
+      
+      rows_added <- as_tibble(vote) |> 
+        dbAppendTable(conn = con, name = "votes", value = _)
+      
+      return(list(
+        status = "success",
+        rows_added = rows_added,
+        message = "Vote successfully submitted"
+      ))
+      
+    }, error = function(e) {
+      return(list(
+        status = "error",
+        message = paste("Database error:", e$message)
+      ))
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Unexpected error:", e$message)
+    ))
+  })
+}
