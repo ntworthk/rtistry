@@ -1871,3 +1871,55 @@ submit_vote <- function(vote_base64) {
     ))
   })
 }
+
+#* Get votes on ACCC mergers from the database
+#* @get /get_votes
+#* @serializer unboxedJSON
+#* @tag accc
+get_votes <- function() {
+  tryCatch({
+    
+    # Database operations in another tryCatch block
+    tryCatch({
+      con <- dbConnect(RSQLite::SQLite(), "accc.sqlite")
+      on.exit(dbDisconnect(con))
+      
+      if (!dbExistsTable(conn = con, name = "votes")) {
+        return(list(
+          status = "error",
+          message = paste("No table named 'votes' exists")
+        ))
+        
+      }
+
+      votes <- dbGetQuery(con, "SELECT * FROM votes") |>
+        as_tibble()
+
+      bucket_lbs <- c(0, 50, 100, 250, 500, 1000)
+      bucket_ubs <- c(bucket_lbs[2:length(bucket_lbs)], Inf)
+      buckets <- tibble(lb = bucket_lbs, ub = bucket_ubs) |>
+        mutate(bucket = ifelse(is.infinite(ub), paste0(lb, "+"), paste0(lb, "-", ub)))
+
+      bucketed_votes <- votes |>
+        inner_join(buckets, join_by(between(vote, lb, ub, bounds = "[)"))) |>
+        count(bucket)
+
+      return(list(
+        status = "success",
+        votes = bucketed_votes
+      ))
+      
+    }, error = function(e) {
+      return(list(
+        status = "error",
+        message = paste("Database error:", e$message)
+      ))
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Unexpected error:", e$message)
+    ))
+  })
+}
