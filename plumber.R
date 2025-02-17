@@ -860,11 +860,11 @@ function(since = 2014, until = NULL){
     "Withdrawn" = "#ECAA2B",
     "Under consideration" = "#AA2E60"
   )
-
+  
   if (is.null(until)) {
-     until <- year(Sys.Date())
+    until <- year(Sys.Date())
   }
-
+  
   decisions_by_year <- decisions_by_year %>% 
     filter(year >= since, year <= until)
   
@@ -873,17 +873,17 @@ function(since = 2014, until = NULL){
     pull(n)
   
   zero_opposed <- length(st) == 0
-
+  
   st <- ifelse(zero_opposed, "No", st) |> 
     paste0(" mergers opposed")
   
   st_year <- max(decisions_by_year$year)
   
-if (zero_opposed) {
-  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**...but no mergers opposed**</span> in ", st_year)
-} else {
-  st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
-}
+  if (zero_opposed) {
+    st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**...but no mergers opposed**</span> in ", st_year)
+  } else {
+    st <- paste0("<span style = 'color:", outcome_colours[["Opposed"]], ";'>**", st, "**</span> in ", st_year)
+  }
   
   g <- decisions_by_year %>% 
     ggplot(aes(x = year, y = n, fill = outcome)) +
@@ -1000,8 +1000,8 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
     if (!is.null(activity)) {
       activity <- paste0('{"', str_replace_all(activity, c("%3D" = '":"', "%3B" = '","', "%20" = ' ', "%2C" = ",", "%3" = ':')), '","Weekday":"', day_name, '"}')
     }
-
-  chat <- chat_openai(
+    
+    chat <- chat_openai(
       model = "gpt-4o-mini",
       system_prompt = "You take in json information about a Strava activity (usually a bike ride) and generate a short whimsical title about the activity.
           If the time is in the MORNING it is a COMMUTE TO work and in the evening it is HOME FROM work.
@@ -1010,12 +1010,12 @@ update_strava <- function(id, name = NULL, description = NULL, key, activity = N
           You should limit your response to ONLY YOUR SUGGESTED TITLE with no other text and do not enclose it in quotes as the output will be used verbatim as the new title.",
       echo = "none"
     )
-
-  name <- chat$chat(activity)
+    
+    name <- chat$chat(activity)
     
   }
   
-
+  
   
   if (str_detect(id, "http")) {
     id <- str_extract(id, "activities(%2F|/)[0-9]+") |> str_remove("activities%2F|activities/")
@@ -1086,7 +1086,7 @@ update_strava_songs <- function(id, key) {
   current_strava_song_index <- read_lines("strava_song_index.txt") |> 
     as.numeric()
   current_strava_song_index <- current_strava_song_index + 1
-
+  
   new_title <- songs |> 
     mutate(title = glue("🎵 Today's tune: {artist} - {name} 🎵")) |> 
     filter(row_number() == current_strava_song_index) |> 
@@ -1135,7 +1135,7 @@ get_days <- function(date = Sys.Date(), limit = 1) {
     mutate(title = str_replace(title, "International", "Intl")) |> 
     mutate(date_format = format(date, "%d %b"), pretty = paste0(date_format, "\n", str_wrap(title, width = 12))) |>
     as.list()
-
+  
 }
 
 #* Submit picks to the database
@@ -1891,20 +1891,20 @@ get_votes <- function() {
         ))
         
       }
-
+      
       votes <- dbGetQuery(con, "SELECT * FROM votes") |>
         as_tibble()
-
+      
       bucket_lbs <- c(0, 50, 100, 250, 500, 1000)
       bucket_ubs <- c(bucket_lbs[2:length(bucket_lbs)], Inf)
       buckets <- tibble(lb = bucket_lbs, ub = bucket_ubs) |>
         mutate(bucket = ifelse(is.infinite(ub), paste0(lb, "+"), paste0(lb, "-", ub)))
-
+      
       bucketed_votes <- votes |>
         inner_join(buckets, join_by(between(vote, lb, ub, bounds = "[)"))) |>
         count(lb, bucket) |>
         select(-lb)
-
+      
       return(list(
         status = "success",
         votes = bucketed_votes
@@ -1931,6 +1931,9 @@ get_votes <- function() {
 #* @serializer json
 #* @tag data
 get_nem <- function(over_time = FALSE) {
+  
+  over_time <- tolower(over_time) %in% c("true", "t", "1")
+  
   
   if (!over_time) {
     read_csv("https://github.com/ntworthk/nem-operational-demand/raw/refs/heads/main/data/max_mins.csv")
