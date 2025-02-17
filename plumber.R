@@ -1926,11 +1926,17 @@ get_votes <- function() {
 }
 
 #* Get NEM max and mins
+#* @param over_time Give a time series of max/mins? Default false
 #* @get /nem
 #* @serializer json
 #* @tag data
-get_nem <- function() {
+get_nem <- function(over_time = FALSE) {
   
-  read_csv("https://github.com/ntworthk/nem-operational-demand/raw/refs/heads/main/data/max_mins.csv")
+  if (!over_time) {
+    read_csv("https://github.com/ntworthk/nem-operational-demand/raw/refs/heads/main/data/max_mins.csv")
+  } else {
+    read_csv("https://github.com/ntworthk/nem-operational-demand/raw/refs/heads/main/data/max_mins_over_time.csv")
+  }
   
 }
+
