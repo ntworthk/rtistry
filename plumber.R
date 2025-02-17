@@ -1924,3 +1924,13 @@ get_votes <- function() {
     ))
   })
 }
+
+#* Get NEM max and mins
+#* @get /nem
+#* @serializer json
+#* @tag data
+get_nem <- function() {
+  
+  read_csv("https://github.com/ntworthk/nem-operational-demand/raw/refs/heads/main/data/max_mins.csv")
+  
+}
