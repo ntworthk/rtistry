@@ -1904,10 +1904,14 @@ get_votes <- function() {
       bucketed_votes <- votes |>
         inner_join(buckets, join_by(between(vote, lb, ub, bounds = "[)"))) |>
         count(bucket, .drop = FALSE)
+
+      summary_results <- votes |>
+        summarise(mean = mean(vote), median = median(vote))
       
       return(list(
         status = "success",
-        votes = bucketed_votes
+        votes = bucketed_votes,
+        summary_results = summary_results
       ))
       
     }, error = function(e) {
