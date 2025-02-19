@@ -1898,7 +1898,7 @@ get_votes <- function() {
       votes <- dbGetQuery(con, "SELECT * FROM votes") |>
         as_tibble()
       
-      bucket_lbs <- c(0, 50, 100, 250, 500, 1000)
+      bucket_lbs <- c(0, 100, 250, 500, 1000, 2000)
       bucket_ubs <- c(bucket_lbs[2:length(bucket_lbs)], Inf)
       buckets <- tibble(lb = bucket_lbs, ub = bucket_ubs) |>
         mutate(bucket = ifelse(is.infinite(ub), paste0(lb, "+"), paste0(lb, "-", ub))) |>
