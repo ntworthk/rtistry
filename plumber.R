@@ -1898,12 +1898,12 @@ get_votes <- function() {
       bucket_lbs <- c(0, 50, 100, 250, 500, 1000)
       bucket_ubs <- c(bucket_lbs[2:length(bucket_lbs)], Inf)
       buckets <- tibble(lb = bucket_lbs, ub = bucket_ubs) |>
-        mutate(bucket = ifelse(is.infinite(ub), paste0(lb, "+"), paste0(lb, "-", ub)))
+        mutate(bucket = ifelse(is.infinite(ub), paste0(lb, "+"), paste0(lb, "-", ub))) |>
+        mutate(bucket = factor(bucket, levels = bucket, ordered = TRUE))
       
       bucketed_votes <- votes |>
         inner_join(buckets, join_by(between(vote, lb, ub, bounds = "[)"))) |>
-        count(lb, bucket) |>
-        select(-lb)
+        count(bucket, .drop = FALSE)
       
       return(list(
         status = "success",
