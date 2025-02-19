@@ -1885,12 +1885,15 @@ get_votes <- function() {
       on.exit(dbDisconnect(con))
       
       if (!dbExistsTable(conn = con, name = "votes")) {
-        return(list(
-          status = "error",
-          message = paste("No table named 'votes' exists")
-        ))
+        template_table <- tibble(
+          vote = integer(),
+          timestamp = character()
+        )
         
-      }
+        dbCreateTable(conn = con, name = "votes", template_table)
+        
+      } 
+
       
       votes <- dbGetQuery(con, "SELECT * FROM votes") |>
         as_tibble()
