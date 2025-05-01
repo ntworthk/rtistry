@@ -1120,6 +1120,32 @@ update_strava_songs <- function(id, key) {
   
 }
 
+#* Update Strava activity song for most recent activity
+#* @param key Authentication key
+#* @get /strava_song_recent
+#* @serializer json
+#* @tag data
+update_strava_song_recent <- function(key) {
+
+source("strava_creds.R")
+source("refresh_strava.R")
+
+  if (key != strava_creds) {
+    return(list("status" = "error - not authorised"))
+  }
+
+# Get most recent Strava activity
+  res <- GET("https://www.strava.com/api/v3/activities", stoken, query = list(per_page = 1))
+  stop_for_status(res)
+  
+  # Extract the ID of the most recent activity
+  activity_id <- content(res)[[1]]$id
+  
+  # Call the update_strava_songs function with the activity ID
+  update_strava_songs(activity_id, key)
+
+}
+
 #* Get UN International Days
 #* @param date Optional, Date to check
 #* @get /days
