@@ -496,7 +496,7 @@ function(time_period = "year", per_day = FALSE){
 #* @serializer unboxedJSON
 #* @get /nowplaying
 #* @tag music
-function() {
+now_playing <- function() {
   authorization <- get_spotify_authorization_code()
   base_url <- "https://api.spotify.com/v1/me/player/currently-playing"
   params <- list(market = NULL, additional_types = "episode")
@@ -575,6 +575,42 @@ function() {
     uri = res$item$album$uri
   )
   
+}
+
+#* Skip to next track
+#* @serializer unboxedJSON
+#* @post /nextsong
+#* @tag music
+function() {
+  authorization <- get_spotify_authorization_code()
+  base_url <- "https://api.spotify.com/v1/me/player/next"
+  
+  res <- RETRY("POST", base_url, config(token = authorization), 
+               encode = "json")
+  
+  if (res$status_code == 200) {
+    # Wait a brief moment for the track to change
+    Sys.sleep(0.5)
+    
+    return(
+      list(
+        success = TRUE,
+        message = "Skipped to next track.",
+        status_code = res$status_code,
+        now_playing = now_playing()
+      )
+    )
+
+  } else {
+    # Handle error cases
+    stop_for_status(res)
+    error_content <- fromJSON(content(res, as = "text", encoding = "UTF-8"))
+    return(list(
+      success = FALSE,
+      message = paste("Failed to skip to next track:", error_content$error$message),
+      status_code = res$status_code
+    ))
+  }
 }
 
 #* Get top artists
