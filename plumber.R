@@ -2023,7 +2023,8 @@ get_votes <- function() {
 #* @tag accc
 get_admin_votes <- function(auth_code = NULL) {
   tryCatch({
-    # Validate authentication
+    # Validate auth code
+    source("antitrusties_creds.R")
     if (is.null(auth_code) || auth_code != expected_code) {
       return(list(
         status = "error",
@@ -2074,7 +2075,8 @@ get_admin_votes <- function(auth_code = NULL) {
 #* @tag accc
 delete_vote <- function(id, auth_code = NULL) {
   tryCatch({
-    # Validate authentication
+    # Validate auth code
+    source("antitrusties_creds.R")
     if (is.null(auth_code) || auth_code != expected_code) {
       return(list(
         status = "error",
