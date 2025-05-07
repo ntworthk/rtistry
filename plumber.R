@@ -36,7 +36,7 @@ source("helpers.R")
 #* @filter cors
 cors <- function(req, res) {
   res$setHeader("Access-Control-Allow-Origin", "https://ntworthk.github.io")
-  res$setHeader("Access-Control-Allow-Methods", "POST")
+  res$setHeader("Access-Control-Allow-Methods", "POST, DELETE")
   res$setHeader("Access-Control-Allow-Headers", "Content-Type")
   
   if (req$REQUEST_METHOD == "OPTIONS") {
