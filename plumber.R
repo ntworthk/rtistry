@@ -1903,11 +1903,23 @@ submit_vote <- function(vote_base64) {
       
       if (!dbExistsTable(conn = con, name = "votes")) {
         template_table <- tibble(
+          id = integer(),
           vote = integer(),
           timestamp = character()
         )
         
         dbCreateTable(conn = con, name = "votes", template_table)
+        
+        # Add index on id column
+        dbExecute(con, "CREATE UNIQUE INDEX idx_votes_id ON votes(id)")
+        
+        # Set up autoincrement for id column
+        dbExecute(con, "CREATE TRIGGER votes_id_trigger AFTER INSERT ON votes
+                        WHEN (NEW.id IS NULL)
+                        BEGIN
+                          UPDATE votes SET id = (SELECT COALESCE(MAX(id), 0) + 1 FROM votes) 
+                          WHERE rowid = NEW.rowid;
+                        END")
       }
       
       rows_added <- as_tibble(vote) |> 
@@ -1948,15 +1960,25 @@ get_votes <- function() {
       
       if (!dbExistsTable(conn = con, name = "votes")) {
         template_table <- tibble(
+          id = integer(),
           vote = integer(),
           timestamp = character()
         )
         
         dbCreateTable(conn = con, name = "votes", template_table)
         
+        # Add index on id column
+        dbExecute(con, "CREATE UNIQUE INDEX idx_votes_id ON votes(id)")
+        
+        # Set up autoincrement for id column
+        dbExecute(con, "CREATE TRIGGER votes_id_trigger AFTER INSERT ON votes
+                        WHEN (NEW.id IS NULL)
+                        BEGIN
+                          UPDATE votes SET id = (SELECT COALESCE(MAX(id), 0) + 1 FROM votes) 
+                          WHERE rowid = NEW.rowid;
+                        END")
       } 
 
-      
       votes <- dbGetQuery(con, "SELECT * FROM votes") |>
         as_tibble()
       
@@ -1977,6 +1999,124 @@ get_votes <- function() {
         status = "success",
         votes = bucketed_votes,
         summary_results = summary_results
+      ))
+      
+    }, error = function(e) {
+      return(list(
+        status = "error",
+        message = paste("Database error:", e$message)
+      ))
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Unexpected error:", e$message)
+    ))
+  })
+}
+
+#* Get all individual votes for admin purposes
+#* @param auth_code The authentication code
+#* @get /admin/votes
+#* @serializer unboxedJSON
+#* @tag accc
+get_admin_votes <- function(auth_code = NULL) {
+  tryCatch({
+    # Validate authentication
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Authentication failed"
+      ))
+    }
+    
+    # Database operations
+    tryCatch({
+      con <- dbConnect(RSQLite::SQLite(), "accc.sqlite")
+      on.exit(dbDisconnect(con))
+      
+      if (!dbExistsTable(conn = con, name = "votes")) {
+        return(list(
+          status = "success",
+          votes = tibble(id = integer(), vote = integer(), timestamp = character())
+        ))
+      }
+      
+      votes <- dbGetQuery(con, "SELECT * FROM votes ORDER BY timestamp DESC") |>
+        as_tibble()
+      
+      return(list(
+        status = "success",
+        votes = votes
+      ))
+      
+    }, error = function(e) {
+      return(list(
+        status = "error",
+        message = paste("Database error:", e$message)
+      ))
+    })
+    
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Unexpected error:", e$message)
+    ))
+  })
+}
+
+#* Delete a vote by ID
+#* @param id The ID of the vote to delete
+#* @param auth_code The authentication code
+#* @delete /admin/votes
+#* @serializer unboxedJSON
+#* @tag accc
+delete_vote <- function(id, auth_code = NULL) {
+  tryCatch({
+    # Validate authentication
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Authentication failed"
+      ))
+    }
+    
+    # Validate ID
+    if (is.null(id) || !grepl("^\\d+$", id)) {
+      return(list(
+        status = "error",
+        message = "Invalid ID"
+      ))
+    }
+    
+    # Convert to numeric
+    id <- as.numeric(id)
+    
+    # Database operations
+    tryCatch({
+      con <- dbConnect(RSQLite::SQLite(), "accc.sqlite")
+      on.exit(dbDisconnect(con))
+      
+      if (!dbExistsTable(conn = con, name = "votes")) {
+        return(list(
+          status = "error",
+          message = "Votes table does not exist"
+        ))
+      }
+      
+      result <- dbExecute(con, "DELETE FROM votes WHERE id = ?", params = list(id))
+      
+      if (result == 0) {
+        return(list(
+          status = "error",
+          message = "Vote not found"
+        ))
+      }
+      
+      return(list(
+        status = "success",
+        message = "Vote successfully deleted"
       ))
       
     }, error = function(e) {
