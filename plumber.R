@@ -33,9 +33,23 @@ library(uuid)
 
 source("helpers.R")
 
+#* Enable CORS
 #* @filter cors
 cors <- function(req, res) {
-  res$setHeader("Access-Control-Allow-Origin", "https://ntworthk.github.io")
+
+  allowed_origins <- c("https://ntworthk.github.io", "https://mergers.fyi")
+
+  # Get the origin from the request
+  origin <- req$HTTP_ORIGIN
+  
+  # Set the appropriate CORS header if the origin is allowed
+  if (!is.null(origin) && origin %in% allowed_origins) {
+    res$setHeader("Access-Control-Allow-Origin", origin)
+  } else {
+    # Default to the first allowed origin if the requesting origin is not allowed
+    res$setHeader("Access-Control-Allow-Origin", allowed_origins[1])
+  }
+
   res$setHeader("Access-Control-Allow-Methods", "POST, DELETE")
   res$setHeader("Access-Control-Allow-Headers", "Content-Type")
   
@@ -43,7 +57,7 @@ cors <- function(req, res) {
     res$status <- 200
     return(list())
   } else {
-    plumber::forward()
+  plumber::forward()
   }
 }
 
