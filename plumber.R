@@ -2170,7 +2170,7 @@ get_nem <- function(over_time = FALSE) {
 
 #* Get temperature image
 #* @get /temperature
-#* @serializer json
+#* @serializer unboxedJSON 
 #* @tag data
 get_temperature <- function() {
   list(
