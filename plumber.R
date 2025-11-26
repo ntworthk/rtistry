@@ -2786,7 +2786,8 @@ get_all_riddles <- function(auth_code) {
     ))
     
   })
-  
+}
+
 #* Get temperature image
 #* @get /temperature
 #* @serializer unboxedJSON 
