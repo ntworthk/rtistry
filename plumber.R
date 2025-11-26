@@ -36,9 +36,9 @@ source("helpers.R")
 #* Enable CORS
 #* @filter cors
 cors <- function(req, res) {
-
-  allowed_origins <- c("https://ntworthk.github.io", "https://mergers.fyi")
-
+  
+  allowed_origins <- c("https://ntworthk.github.io", "https://mergers.fyi", "https://houstonkemp.github.io")
+  
   # Get the origin from the request
   origin <- req$HTTP_ORIGIN
   
@@ -49,7 +49,7 @@ cors <- function(req, res) {
     # Default to the first allowed origin if the requesting origin is not allowed
     res$setHeader("Access-Control-Allow-Origin", allowed_origins[1])
   }
-
+  
   res$setHeader("Access-Control-Allow-Methods", "POST, DELETE")
   res$setHeader("Access-Control-Allow-Headers", "Content-Type")
   
@@ -57,7 +57,7 @@ cors <- function(req, res) {
     res$status <- 200
     return(list())
   } else {
-  plumber::forward()
+    plumber::forward()
   }
 }
 
@@ -614,7 +614,7 @@ function() {
         now_playing = now_playing()
       )
     )
-
+    
   } else {
     # Handle error cases
     stop_for_status(res)
@@ -1176,15 +1176,15 @@ update_strava_songs <- function(id, key) {
 #* @serializer json
 #* @tag data
 update_strava_song_recent <- function(key) {
-
-source("strava_creds.R")
-source("refresh_strava.R")
-
+  
+  source("strava_creds.R")
+  source("refresh_strava.R")
+  
   if (key != strava_creds) {
     return(list("status" = "error - not authorised"))
   }
-
-# Get most recent Strava activity
+  
+  # Get most recent Strava activity
   res <- GET("https://www.strava.com/api/v3/activities", stoken, query = list(per_page = 1))
   stop_for_status(res)
   
@@ -1193,7 +1193,7 @@ source("refresh_strava.R")
   
   # Call the update_strava_songs function with the activity ID
   update_strava_songs(activity_id, key)
-
+  
 }
 
 #* Get UN International Days
@@ -1992,7 +1992,7 @@ get_votes <- function() {
                           WHERE rowid = NEW.rowid;
                         END")
       } 
-
+      
       votes <- dbGetQuery(con, "SELECT * FROM votes") |>
         as_tibble()
       
@@ -2005,7 +2005,7 @@ get_votes <- function() {
       bucketed_votes <- votes |>
         inner_join(buckets, join_by(between(vote, lb, ub, bounds = "[)"))) |>
         count(bucket, .drop = FALSE)
-
+      
       summary_results <- votes |>
         summarise(mean = mean(vote), median = median(vote))
       
@@ -2165,6 +2165,627 @@ get_nem <- function(over_time = FALSE) {
   } else {
     read_csv("https://github.com/ntworthk/nem-operational-demand/raw/refs/heads/main/data/max_mins_over_time.csv")
   }
+  
+}
+
+#* Get active riddles
+#* @get /riddles/active
+#* @serializer unboxedJSON
+#* @tag riddles
+get_active_riddles <- function() {
+  
+  tryCatch({
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "riddles")) {
+      
+      return(list(
+        status = "success",
+        riddles = list()
+      ))
+      
+    }
+    
+    # Get only active riddles, excluding the answer field
+    riddles <- dbGetQuery(
+      con,
+      "SELECT id, riddle_text, position, week FROM riddles WHERE is_active = 1 ORDER BY position"
+    )
+    
+    return(list(
+      status = "success",
+      riddles = riddles
+    ))
+    
+  }, error = function(e) {
+    
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+    
+  })
+  
+}
+
+#* Check riddle answer
+#* @param riddle_id The ID of the riddle
+#* @param answer The user's answer
+#* @post /riddles/check
+#* @serializer unboxedJSON
+#* @tag riddles
+check_riddle_answer <- function(riddle_id, answer) {
+  
+  tryCatch({
+    # Validate inputs
+    if (is.null(riddle_id) || riddle_id == "" || is.null(answer) || answer == "") {
+      return(list(
+        status = "error",
+        message = "Missing riddle_id or answer"
+      ))
+    }
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    # Get the riddle
+    riddle <- dbGetQuery(
+      con,
+      "SELECT id, answer, digit, position FROM riddles WHERE id = $1 AND is_active = 1",
+      params = list(riddle_id)
+    )
+    
+    if (nrow(riddle) == 0) {
+      
+      return(list(
+        status = "error",
+        correct = FALSE,
+        message = "Riddle not found or not active"
+      ))
+      
+    }
+    
+    
+    
+    # Check answer (case-insensitive, trimmed)
+    
+    user_answer <- tolower(trimws(answer))
+    correct_answer <- tolower(trimws(riddle$answer))
+    
+    if (user_answer == correct_answer) {
+      
+      return(list(
+        status = "success",
+        correct = TRUE,
+        digit = riddle$digit,
+        position = riddle$position,
+        message = "Correct!"
+      ))
+      
+    } else {
+      
+      return(list(
+        status = "success",
+        correct = FALSE,
+        message = "Incorrect answer. Try again!"
+      ))
+      
+    }
+    
+    
+    
+  }, error = function(e) {
+    
+    return(list(
+      status = "error",
+      message = paste("Error:", e$message)
+    ))
+  })
+  
+}
+
+#* Submit a new riddle
+#* @param riddle_text The riddle question
+#* @param answer The correct answer
+#* @param digit The digit to reveal (0-9)
+#* @param position Position in combination (1-3)
+#* @param week Optional week number
+#* @param notes Optional admin notes
+#* @param auth_code Authentication code
+#* @post /riddles/submit
+#* @serializer unboxedJSON
+#* @tag riddles
+submit_riddle <- function(riddle_text, answer, digit, position, auth_code, week = NULL, notes = "") {
+  
+  tryCatch({
+    
+    # Validate auth code
+    
+    source("antitrusties_creds.R")
+    
+    if (is.null(auth_code) || auth_code != expected_code) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Invalid authentication code"
+        
+      ))
+      
+    }
+    
+    
+    
+    # Validate inputs
+    
+    if (is.null(riddle_text) || riddle_text == "" ||
+        
+        is.null(answer) || answer == "") {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Missing required fields"
+        
+      ))
+      
+    }
+    
+    
+    
+    digit <- as.integer(digit)
+    
+    position <- as.integer(position)
+    
+    
+    
+    if (is.na(digit) || digit < 0 || digit > 9) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Digit must be between 0 and 9"
+        
+      ))
+      
+    }
+    
+    
+    
+    if (is.na(position) || position < 1 || position > 3) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Position must be 1, 2, or 3"
+        
+      ))
+      
+    }
+    
+    
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    
+    on.exit(dbDisconnect(con))
+    
+    
+    
+    # Create table if it doesn't exist
+    
+    if (!dbExistsTable(conn = con, name = "riddles")) {
+      
+      dbExecute(con, "
+
+        CREATE TABLE riddles (
+
+            id TEXT PRIMARY KEY,
+
+            riddle_text TEXT NOT NULL,
+
+            answer TEXT NOT NULL,
+
+            digit INTEGER NOT NULL CHECK (digit >= 0 AND digit <= 9),
+
+            position INTEGER NOT NULL CHECK (position >= 1 AND position <= 3),
+
+            week INTEGER,
+
+            is_active INTEGER DEFAULT 0,
+
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+            activated_at TEXT,
+
+            notes TEXT
+
+        )
+
+      ")
+      
+    }
+    
+    
+    
+    # Insert new riddle
+    
+    riddle_id <- UUIDgenerate()
+    
+    
+    
+    dbExecute(
+      
+      con,
+      
+      "INSERT INTO riddles (id, riddle_text, answer, digit, position, week, notes, created_at)
+
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      
+      params = list(
+        
+        riddle_id,
+        
+        riddle_text,
+        
+        tolower(trimws(answer)),
+        
+        digit,
+        
+        position,
+        
+        week,
+        
+        notes,
+        
+        format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+        
+      )
+      
+    )
+    
+    
+    
+    return(list(
+      
+      status = "success",
+      
+      message = "Riddle submitted successfully",
+      
+      riddle_id = riddle_id
+      
+    ))
+    
+    
+    
+  }, error = function(e) {
+    
+    return(list(
+      
+      status = "error",
+      
+      message = paste("Error:", e$message)
+      
+    ))
+    
+  })
+  
+}
+
+#* Activate a riddle
+#* @param riddle_id The ID of the riddle to activate
+#* @param auth_code Authentication code
+#* @post /riddles/activate
+#* @serializer unboxedJSON
+#* @tag riddles
+activate_riddle <- function(riddle_id, auth_code) {
+  
+  tryCatch({
+    
+    # Validate auth code
+    
+    source("antitrusties_creds.R")
+    
+    if (is.null(auth_code) || auth_code != expected_code) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Invalid authentication code"
+        
+      ))
+      
+    }
+    
+    
+    
+    if (is.null(riddle_id) || riddle_id == "") {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Missing riddle_id"
+        
+      ))
+      
+    }
+    
+    
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    
+    on.exit(dbDisconnect(con))
+    
+    
+    
+    # Check if riddle exists
+    
+    riddle <- dbGetQuery(
+      
+      con,
+      
+      "SELECT id, is_active FROM riddles WHERE id = $1",
+      
+      params = list(riddle_id)
+      
+    )
+    
+    
+    
+    if (nrow(riddle) == 0) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Riddle not found"
+        
+      ))
+      
+    }
+    
+    
+    
+    if (riddle$is_active == 1) {
+      
+      return(list(
+        
+        status = "success",
+        
+        message = "Riddle is already active"
+        
+      ))
+      
+    }
+    
+    
+    
+    # Activate the riddle
+    
+    dbExecute(
+      
+      con,
+      
+      "UPDATE riddles SET is_active = 1, activated_at = $1 WHERE id = $2",
+      
+      params = list(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), riddle_id)
+      
+    )
+    
+    
+    
+    return(list(
+      
+      status = "success",
+      
+      message = "Riddle activated successfully"
+      
+    ))
+    
+    
+    
+  }, error = function(e) {
+    
+    return(list(
+      
+      status = "error",
+      
+      message = paste("Error:", e$message)
+      
+    ))
+    
+  })
+  
+}
+
+#* Deactivate a riddle
+#* @param riddle_id The ID of the riddle to deactivate
+#* @param auth_code Authentication code
+#* @post /riddles/deactivate
+#* @serializer unboxedJSON
+#* @tag riddles
+deactivate_riddle <- function(riddle_id, auth_code) {
+  
+  tryCatch({
+    
+    # Validate auth code
+    
+    source("antitrusties_creds.R")
+    
+    if (is.null(auth_code) || auth_code != expected_code) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Invalid authentication code"
+        
+      ))
+      
+    }
+    
+    
+    
+    if (is.null(riddle_id) || riddle_id == "") {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Missing riddle_id"
+        
+      ))
+      
+    }
+    
+    
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    
+    on.exit(dbDisconnect(con))
+    
+    
+    
+    # Deactivate the riddle
+    
+    rows_affected <- dbExecute(
+      
+      con,
+      
+      "UPDATE riddles SET is_active = 0 WHERE id = $1",
+      
+      params = list(riddle_id)
+      
+    )
+    
+    
+    
+    if (rows_affected == 0) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Riddle not found"
+        
+      ))
+      
+    }
+    
+    
+    
+    return(list(
+      
+      status = "success",
+      
+      message = "Riddle deactivated successfully"
+      
+    ))
+    
+    
+    
+  }, error = function(e) {
+    
+    return(list(
+      
+      status = "error",
+      
+      message = paste("Error:", e$message)
+      
+    ))
+    
+  })
+  
+}
+
+
+#* Get all riddles (admin)
+#* @param auth_code Authentication code
+#* @get /riddles/all
+#* @serializer unboxedJSON
+#* @tag riddles
+get_all_riddles <- function(auth_code) {
+  
+  tryCatch({
+    
+    # Validate auth code
+    
+    source("antitrusties_creds.R")
+    
+    if (is.null(auth_code) || auth_code != expected_code) {
+      
+      return(list(
+        
+        status = "error",
+        
+        message = "Invalid authentication code"
+        
+      ))
+      
+    }
+    
+    
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    
+    on.exit(dbDisconnect(con))
+    
+    
+    
+    if (!dbExistsTable(conn = con, name = "riddles")) {
+      
+      return(list(
+        
+        status = "success",
+        
+        riddles = list()
+        
+      ))
+      
+    }
+    
+    
+    
+    # Get all riddles
+    
+    riddles <- dbGetQuery(
+      
+      con,
+      
+      "SELECT * FROM riddles ORDER BY created_at DESC"
+      
+    )
+    
+    
+    
+    return(list(
+      
+      status = "success",
+      
+      riddles = riddles
+      
+    ))
+    
+    
+    
+  }, error = function(e) {
+    
+    return(list(
+      
+      status = "error",
+      
+      message = paste("Database error:", e$message)
+      
+    ))
+    
+  })
   
 }
 
