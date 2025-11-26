@@ -2787,5 +2787,15 @@ get_all_riddles <- function(auth_code) {
     
   })
   
+#* Get temperature image
+#* @get /temperature
+#* @serializer unboxedJSON 
+#* @tag data
+get_temperature <- function() {
+  list(
+    filename = as.character(as.integer(Sys.time())),
+    url = "https://192.168.86.99:8080/temperature_display.png",
+    refresh_rate = 120
+  )
 }
 
