@@ -2200,7 +2200,7 @@ get_active_riddles <- function() {
     # Get active riddles (not expired), excluding the answer field
     active_riddles <- dbGetQuery(
       con,
-      "SELECT id, riddle_text, position, week, is_expired FROM riddles WHERE is_active = 1 AND is_expired = 0 ORDER BY position"
+      "SELECT id, riddle_text, position, week, is_expired FROM riddles WHERE is_active = 1 AND is_expired = 0"
     )
     
     # Get expired riddles, excluding the answer field
