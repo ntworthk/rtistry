@@ -2222,13 +2222,13 @@ get_active_riddles <- function() {
   })
 }
 
-#* Check riddle answer
+#* Check riddle answer (with tracking)
 #* @param riddle_id The ID of the riddle
 #* @param answer The user's answer
 #* @post /riddles/check
 #* @serializer unboxedJSON
 #* @tag riddles
-check_riddle_answer <- function(riddle_id, answer) {
+check_riddle_answer <- function(riddle_id, answer, req) {
   tryCatch({
     # Validate inputs
     if (is.null(riddle_id) || riddle_id == "" || is.null(answer) || answer == "") {
@@ -2240,6 +2240,26 @@ check_riddle_answer <- function(riddle_id, answer) {
     
     con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
     on.exit(dbDisconnect(con))
+    
+    # Create submissions table if it doesn't exist
+    if (!dbExistsTable(conn = con, name = "submissions")) {
+      dbExecute(con, "
+        CREATE TABLE submissions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          riddle_id TEXT NOT NULL,
+          answer_given TEXT NOT NULL,
+          is_correct INTEGER NOT NULL,
+          submitted_at TEXT NOT NULL,
+          ip_address TEXT,
+          user_agent TEXT,
+          referer TEXT,
+          accept_language TEXT,
+          x_forwarded_for TEXT,
+          origin TEXT,
+          session_id TEXT
+        )
+      ")
+    }
     
     # Get the riddle
     riddle <- dbGetQuery(
@@ -2259,8 +2279,41 @@ check_riddle_answer <- function(riddle_id, answer) {
     # Check answer (case-insensitive, trimmed)
     user_answer <- tolower(trimws(answer))
     correct_answer <- tolower(trimws(riddle$answer))
+    is_correct <- user_answer == correct_answer
     
-    if (user_answer == correct_answer) {
+    # Extract request metadata
+    ip_address <- req$REMOTE_ADDR %||% NA_character_
+    x_forwarded_for <- req$HTTP_X_FORWARDED_FOR %||% NA_character_
+    user_agent <- req$HTTP_USER_AGENT %||% NA_character_
+    referer <- req$HTTP_REFERER %||% NA_character_
+    accept_language <- req$HTTP_ACCEPT_LANGUAGE %||% NA_character_
+    origin <- req$HTTP_ORIGIN %||% NA_character_
+    
+    # Try to get a session identifier from cookies if present
+    session_id <- req$HTTP_COOKIE %||% NA_character_
+    
+    # Log the submission
+    dbExecute(
+      con,
+      "INSERT INTO submissions (riddle_id, answer_given, is_correct, submitted_at, 
+       ip_address, user_agent, referer, accept_language, x_forwarded_for, origin, session_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+      params = list(
+        riddle_id,
+        user_answer,
+        as.integer(is_correct),
+        format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+        ip_address,
+        user_agent,
+        referer,
+        accept_language,
+        x_forwarded_for,
+        origin,
+        session_id
+      )
+    )
+    
+    if (is_correct) {
       return(list(
         status = "success",
         correct = TRUE,
@@ -2280,6 +2333,132 @@ check_riddle_answer <- function(riddle_id, answer) {
     return(list(
       status = "error",
       message = paste("Error:", e$message)
+    ))
+  })
+}
+
+#* Get all submissions (admin)
+#* @param auth_code Authentication code
+#* @param riddle_id Optional filter by riddle
+#* @param correct_only Optional filter for correct answers only
+#* @get /riddles/submissions
+#* @serializer unboxedJSON
+#* @tag riddles
+get_submissions <- function(auth_code, riddle_id = NULL, correct_only = NULL) {
+  tryCatch({
+    source("antitrusties_creds.R")
+    
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Invalid authentication code"
+      ))
+    }
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "submissions")) {
+      return(list(
+        status = "success",
+        submissions = list(),
+        total = 0
+      ))
+    }
+    
+    # Build query with optional filters
+    query <- "SELECT s.*, r.riddle_text, r.week, r.position 
+              FROM submissions s
+              LEFT JOIN riddles r ON s.riddle_id = r.id
+              WHERE 1=1"
+    params <- list()
+    param_idx <- 1
+    
+    if (!is.null(riddle_id) && riddle_id != "") {
+      query <- paste0(query, " AND s.riddle_id = $", param_idx)
+      params[[param_idx]] <- riddle_id
+      param_idx <- param_idx + 1
+    }
+    
+    if (!is.null(correct_only) && correct_only == "true") {
+      query <- paste0(query, " AND s.is_correct = 1")
+    }
+    
+    query <- paste0(query, " ORDER BY s.submitted_at DESC")
+    
+    submissions <- dbGetQuery(con, query, params = params)
+    
+    # Summary stats
+    stats <- dbGetQuery(con, "
+      SELECT 
+        COUNT(*) as total_submissions,
+        SUM(is_correct) as correct_submissions,
+        COUNT(DISTINCT ip_address) as unique_ips,
+        COUNT(DISTINCT user_agent) as unique_user_agents
+      FROM submissions
+    ")
+    
+    return(list(
+      status = "success",
+      submissions = submissions,
+      stats = stats
+    ))
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
+    ))
+  })
+}
+
+#* Get submission stats by riddle (admin)
+#* @param auth_code Authentication code
+#* @get /riddles/submissions/stats
+#* @serializer unboxedJSON
+#* @tag riddles
+get_submission_stats <- function(auth_code) {
+  tryCatch({
+    source("antitrusties_creds.R")
+    
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Invalid authentication code"
+      ))
+    }
+    
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    on.exit(dbDisconnect(con))
+    
+    if (!dbExistsTable(conn = con, name = "submissions")) {
+      return(list(status = "success", stats = list()))
+    }
+    
+    stats <- dbGetQuery(con, "
+      SELECT 
+        s.riddle_id,
+        r.riddle_text,
+        r.week,
+        r.position,
+        COUNT(*) as total_attempts,
+        SUM(s.is_correct) as correct_attempts,
+        COUNT(DISTINCT s.ip_address) as unique_ips,
+        MIN(s.submitted_at) as first_attempt,
+        MAX(s.submitted_at) as last_attempt
+      FROM submissions s
+      LEFT JOIN riddles r ON s.riddle_id = r.id
+      GROUP BY s.riddle_id
+      ORDER BY r.week, r.position
+    ")
+    
+    return(list(
+      status = "success",
+      stats = stats
+    ))
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
     ))
   })
 }
