@@ -2225,10 +2225,11 @@ get_active_riddles <- function() {
 #* Check riddle answer (with tracking)
 #* @param riddle_id The ID of the riddle
 #* @param answer The user's answer
+#* @param fingerprint Browser fingerprint data (optional JSON object)
 #* @post /riddles/check
 #* @serializer unboxedJSON
 #* @tag riddles
-check_riddle_answer <- function(riddle_id, answer, req) {
+check_riddle_answer <- function(riddle_id, answer, req, fingerprint = NULL) {
   tryCatch({
     # Validate inputs
     if (is.null(riddle_id) || riddle_id == "" || is.null(answer) || answer == "") {
@@ -2237,11 +2238,11 @@ check_riddle_answer <- function(riddle_id, answer, req) {
         message = "Missing riddle_id or answer"
       ))
     }
-    
+ 
     con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
     on.exit(dbDisconnect(con))
-    
-    # Create submissions table if it doesn't exist
+ 
+    # Create submissions table if it doesn't exist (with new fingerprint columns)
     if (!dbExistsTable(conn = con, name = "submissions")) {
       dbExecute(con, "
         CREATE TABLE submissions (
@@ -2256,18 +2257,72 @@ check_riddle_answer <- function(riddle_id, answer, req) {
           accept_language TEXT,
           x_forwarded_for TEXT,
           origin TEXT,
-          session_id TEXT
+          session_id TEXT,
+          -- Browser fingerprint fields
+          screen_width INTEGER,
+          screen_height INTEGER,
+          screen_color_depth INTEGER,
+          screen_pixel_depth INTEGER,
+          timezone_offset INTEGER,
+          platform TEXT,
+          hardware_concurrency INTEGER,
+          device_memory REAL,
+          max_touch_points INTEGER,
+          do_not_track TEXT,
+          cookie_enabled INTEGER,
+          languages TEXT,
+          vendor TEXT,
+          product TEXT,
+          product_sub TEXT,
+          canvas_hash TEXT,
+          webgl_vendor TEXT,
+          webgl_renderer TEXT
         )
       ")
+    } else {
+      # Add new columns if they don't exist (for existing databases)
+      existing_columns <- dbListFields(con, "submissions")
+      new_columns <- list(
+        screen_width = "INTEGER",
+        screen_height = "INTEGER",
+        screen_color_depth = "INTEGER",
+        screen_pixel_depth = "INTEGER",
+        timezone_offset = "INTEGER",
+        platform = "TEXT",
+        hardware_concurrency = "INTEGER",
+        device_memory = "REAL",
+        max_touch_points = "INTEGER",
+        do_not_track = "TEXT",
+        cookie_enabled = "INTEGER",
+        languages = "TEXT",
+        vendor = "TEXT",
+        product = "TEXT",
+        product_sub = "TEXT",
+        canvas_hash = "TEXT",
+        webgl_vendor = "TEXT",
+        webgl_renderer = "TEXT"
+      )
+ 
+      for (col_name in names(new_columns)) {
+        if (!(col_name %in% existing_columns)) {
+          tryCatch({
+            dbExecute(con, sprintf("ALTER TABLE submissions ADD COLUMN %s %s",
+                                   col_name, new_columns[[col_name]]))
+          }, error = function(e) {
+            # Column might already exist or error adding it
+            message(sprintf("Could not add column %s: %s", col_name, e$message))
+          })
+        }
+      }
     }
-    
+ 
     # Get the riddle
     riddle <- dbGetQuery(
       con,
       "SELECT id, answer, digit, position, is_expired FROM riddles WHERE id = $1 AND is_active = 1",
       params = list(riddle_id)
     )
-    
+ 
     if (nrow(riddle) == 0) {
       return(list(
         status = "error",
@@ -2275,12 +2330,12 @@ check_riddle_answer <- function(riddle_id, answer, req) {
         message = "Riddle not found or not active"
       ))
     }
-    
+ 
     # Check answer (case-insensitive, trimmed)
     user_answer <- tolower(trimws(answer))
     correct_answer <- tolower(trimws(riddle$answer))
     is_correct <- user_answer == correct_answer
-    
+ 
     # Extract request metadata
     ip_address <- req$REMOTE_ADDR %||% NA_character_
     x_forwarded_for <- req$HTTP_X_FORWARDED_FOR %||% NA_character_
@@ -2288,16 +2343,63 @@ check_riddle_answer <- function(riddle_id, answer, req) {
     referer <- req$HTTP_REFERER %||% NA_character_
     accept_language <- req$HTTP_ACCEPT_LANGUAGE %||% NA_character_
     origin <- req$HTTP_ORIGIN %||% NA_character_
-    
+ 
     # Try to get a session identifier from cookies if present
     session_id <- req$HTTP_COOKIE %||% NA_character_
-    
-    # Log the submission
+ 
+    # Extract fingerprint data (sent from frontend)
+    fp_screen_width <- NULL
+    fp_screen_height <- NULL
+    fp_screen_color_depth <- NULL
+    fp_screen_pixel_depth <- NULL
+    fp_timezone_offset <- NULL
+    fp_platform <- NULL
+    fp_hardware_concurrency <- NULL
+    fp_device_memory <- NULL
+    fp_max_touch_points <- NULL
+    fp_do_not_track <- NULL
+    fp_cookie_enabled <- NULL
+    fp_languages <- NULL
+    fp_vendor <- NULL
+    fp_product <- NULL
+    fp_product_sub <- NULL
+    fp_canvas_hash <- NULL
+    fp_webgl_vendor <- NULL
+    fp_webgl_renderer <- NULL
+ 
+    if (!is.null(fingerprint) && is.list(fingerprint)) {
+      fp_screen_width <- fingerprint$screen_width
+      fp_screen_height <- fingerprint$screen_height
+      fp_screen_color_depth <- fingerprint$screen_color_depth
+      fp_screen_pixel_depth <- fingerprint$screen_pixel_depth
+      fp_timezone_offset <- fingerprint$timezone_offset
+      fp_platform <- fingerprint$platform
+      fp_hardware_concurrency <- fingerprint$hardware_concurrency
+      fp_device_memory <- fingerprint$device_memory
+      fp_max_touch_points <- fingerprint$max_touch_points
+      fp_do_not_track <- fingerprint$do_not_track
+      fp_cookie_enabled <- as.integer(fingerprint$cookie_enabled)
+      fp_languages <- fingerprint$languages
+      fp_vendor <- fingerprint$vendor
+      fp_product <- fingerprint$product
+      fp_product_sub <- fingerprint$product_sub
+      fp_canvas_hash <- fingerprint$canvas_hash
+      fp_webgl_vendor <- fingerprint$webgl_vendor
+      fp_webgl_renderer <- fingerprint$webgl_renderer
+    }
+ 
+    # Log the submission with fingerprint data
     dbExecute(
       con,
-      "INSERT INTO submissions (riddle_id, answer_given, is_correct, submitted_at, 
-       ip_address, user_agent, referer, accept_language, x_forwarded_for, origin, session_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+      "INSERT INTO submissions (
+         riddle_id, answer_given, is_correct, submitted_at,
+         ip_address, user_agent, referer, accept_language, x_forwarded_for, origin, session_id,
+         screen_width, screen_height, screen_color_depth, screen_pixel_depth,
+         timezone_offset, platform, hardware_concurrency, device_memory, max_touch_points,
+         do_not_track, cookie_enabled, languages, vendor, product, product_sub,
+         canvas_hash, webgl_vendor, webgl_renderer
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)",
       params = list(
         riddle_id,
         user_answer,
@@ -2309,10 +2411,28 @@ check_riddle_answer <- function(riddle_id, answer, req) {
         accept_language,
         x_forwarded_for,
         origin,
-        session_id
+        session_id,
+        fp_screen_width,
+        fp_screen_height,
+        fp_screen_color_depth,
+        fp_screen_pixel_depth,
+        fp_timezone_offset,
+        fp_platform,
+        fp_hardware_concurrency,
+        fp_device_memory,
+        fp_max_touch_points,
+        fp_do_not_track,
+        fp_cookie_enabled,
+        fp_languages,
+        fp_vendor,
+        fp_product,
+        fp_product_sub,
+        fp_canvas_hash,
+        fp_webgl_vendor,
+        fp_webgl_renderer
       )
     )
-    
+ 
     if (is_correct) {
       return(list(
         status = "success",
@@ -2333,6 +2453,82 @@ check_riddle_answer <- function(riddle_id, answer, req) {
     return(list(
       status = "error",
       message = paste("Error:", e$message)
+    ))
+  })
+}
+
+# Add this helper function to query and analyze user fingerprints
+#* Get unique user fingerprints (admin)
+#* @param auth_code Authentication code
+#* @get /riddles/fingerprints
+#* @serializer unboxedJSON
+#* @tag riddles
+get_user_fingerprints <- function(auth_code) {
+  tryCatch({
+    source("antitrusties_creds.R")
+ 
+    if (is.null(auth_code) || auth_code != expected_code) {
+      return(list(
+        status = "error",
+        message = "Invalid authentication code"
+      ))
+    }
+ 
+    con <- dbConnect(RSQLite::SQLite(), "riddles.sqlite")
+    on.exit(dbDisconnect(con))
+ 
+    if (!dbExistsTable(conn = con, name = "submissions")) {
+      return(list(
+        status = "success",
+        fingerprints = list(),
+        total = 0
+      ))
+    }
+
+    # Get unique combinations of fingerprint characteristics
+    fingerprints <- dbGetQuery(con, "
+      SELECT
+        COUNT(*) as submission_count,
+        MIN(submitted_at) as first_seen,
+        MAX(submitted_at) as last_seen,
+        ip_address,
+        screen_width,
+        screen_height,
+        screen_color_depth,
+        timezone_offset,
+        platform,
+        hardware_concurrency,
+        device_memory,
+        max_touch_points,
+        canvas_hash,
+        webgl_renderer,
+        languages,
+        user_agent
+      FROM submissions
+      GROUP BY
+        ip_address,
+        screen_width,
+        screen_height,
+        screen_color_depth,
+        timezone_offset,
+        platform,
+        hardware_concurrency,
+        device_memory,
+        max_touch_points,
+        canvas_hash,
+        webgl_renderer
+      ORDER BY submission_count DESC
+    ")
+
+    return(list(
+      status = "success",
+      unique_users = nrow(fingerprints),
+      fingerprints = fingerprints
+    ))
+  }, error = function(e) {
+    return(list(
+      status = "error",
+      message = paste("Database error:", e$message)
     ))
   })
 }
