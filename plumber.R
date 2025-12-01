@@ -2582,7 +2582,12 @@ get_submissions <- function(auth_code, riddle_id = NULL, correct_only = NULL) {
     
     query <- paste0(query, " ORDER BY s.submitted_at DESC")
     
-    submissions <- dbGetQuery(con, query, params = params)
+    # Only pass params if we have any
+    if (length(params) > 0) {
+      submissions <- dbGetQuery(con, query, params = params)
+    } else {
+      submissions <- dbGetQuery(con, query)
+    }
     
     # Summary stats
     stats <- dbGetQuery(con, "
